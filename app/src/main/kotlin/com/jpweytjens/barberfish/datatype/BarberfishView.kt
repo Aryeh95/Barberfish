@@ -24,6 +24,7 @@ import com.jpweytjens.barberfish.datatype.shared.renderHeaderBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderTwoRowValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderWindArrowValueBitmap
+import com.jpweytjens.barberfish.datatype.shared.speedWindValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.toColorConfig
 import com.jpweytjens.barberfish.datatype.shared.toViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.windArrowBoxPx
@@ -178,6 +179,9 @@ fun sparklineImageSize(
     return widthPx to heightPx
 }
 
+// Custom build: the Show speed branch adds one path to the value chain. LongMethod was already
+// baselined for this function; the annotation changes the signature the baseline matches on.
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 private fun makeFieldRemoteViews(
     field: FieldState,
     displayLabel: String,
@@ -247,7 +251,19 @@ private fun makeFieldRemoteViews(
         )
 
     val valueBitmap =
-        if (field.windArrowDeg != null) {
+        if (field.speedRow != null) {
+            // Wind slot with Show speed (custom build): speed over the wind.
+            speedWindValueBitmap(
+                field.speedRow,
+                field,
+                valueText,
+                bitmapHeightPx,
+                cellWidthPx,
+                colors,
+                alignment,
+                context,
+            )
+        } else if (field.windArrowDeg != null) {
             renderWindArrowValueBitmap(
                 angleDeg = field.windArrowDeg,
                 text = valueText,
