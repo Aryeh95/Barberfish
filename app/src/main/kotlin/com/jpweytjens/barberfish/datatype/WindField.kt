@@ -152,6 +152,7 @@ class WindField(private val karooSystem: KarooSystemService) :
                 iconRes = ICON,
                 colorMode = cfg.colorMode,
                 windArrowDeg = if (bands > 0) angleDeg.toFloat() else null,
+                windSpeedRow = formatHeadwind(speed),
             )
         }
 
@@ -178,6 +179,7 @@ class WindField(private val karooSystem: KarooSystemService) :
                         iconRes = ICON,
                         colorMode = cfg.colorMode,
                         windArrowDeg = if (bands > 0) s.angleDeg else null,
+                        windSpeedRow = formatHeadwind(s.speed),
                     )
                 }
         }

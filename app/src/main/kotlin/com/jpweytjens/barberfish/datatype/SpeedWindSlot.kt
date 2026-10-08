@@ -13,10 +13,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 
 /*
- * The Wind HUD slot's Show speed option: ride speed on the top row, the Wind slot's arrow and
- * headwind number on the bottom row. Colour stays on the wind, the only coloured quantity in the
- * slot; a HUD Speed slot is never coloured either. When the wind has nothing to show the slot is
- * a plain Speed slot, so the column never drops while speed is still valid.
+ * The Wind HUD slot's Show speed option: the total wind speed and the ride speed on the top row,
+ * the Wind slot's arrow and headwind number on the bottom row. Colour stays on the wind, the only
+ * coloured quantity in the slot; a HUD Speed slot is never coloured either. When the wind has
+ * nothing to show the slot is a plain Speed slot, so the column never drops while speed is still
+ * valid.
  */
 
 private fun FieldState.isLive(): Boolean = color != FieldColor.StreamState

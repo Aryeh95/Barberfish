@@ -10,6 +10,7 @@ import com.jpweytjens.barberfish.datatype.shared.SlotState
 import com.jpweytjens.barberfish.datatype.shared.WindArrowGeometry
 import com.jpweytjens.barberfish.datatype.shared.speedWindGeometry
 import com.jpweytjens.barberfish.datatype.shared.visibleColumns
+import com.jpweytjens.barberfish.datatype.shared.windSpeedFontPx
 import com.jpweytjens.barberfish.datatype.speedWindState
 import com.jpweytjens.barberfish.datatype.withSpeedPreview
 import com.jpweytjens.barberfish.datatype.withSpeedStates
@@ -83,6 +84,7 @@ class SpeedWindSlotTest {
         assertEquals(R.drawable.ic_col_speed, s.iconRes)
         assertEquals(w.iconRes, s.secondaryIconRes)
         assertEquals(225f, s.windArrowDeg!!, 1e-6f)
+        assertEquals("15", s.windSpeedRow)
         assertEquals(w.color, s.color)
         assertTrue((s.color as FieldColor.Threshold).factor < 0f)
         assertFalse(s.noSensor)
@@ -100,6 +102,7 @@ class SpeedWindSlotTest {
         val s = speedWindState(speed(25.0), wind(90.0, 0.0, 1.0))
         assertNull(s.windArrowDeg)
         assertNotNull(s.speedRow)
+        assertEquals("1", s.windSpeedRow)
     }
 
     @Test
@@ -113,6 +116,7 @@ class SpeedWindSlotTest {
         val sp = speed(25.0)
         val s = speedWindState(sp, WindField.noWindData())
         assertEquals(sp, s)
+        assertNull(s.windSpeedRow)
         assertFalse(s.noSensor)
         val live = SlotState(FieldState("142", "HR", FieldColor.Default), ZoneColorMode.TEXT)
         val hud = HUDState(3, live, SlotState(s, ZoneColorMode.TEXT), live, live, metric)
@@ -170,6 +174,7 @@ class SpeedWindSlotTest {
         val stacked = frames.withSpeedPreview(slot, metric)
         assertEquals(frames.size, stacked.size)
         assertTrue(stacked.all { it.speedRow != null })
+        assertEquals(listOf("1", "6", "14", "15", "29"), stacked.map { it.windSpeedRow })
         assertNull(stacked.first().windArrowDeg) // the calm frame
     }
 
@@ -210,5 +215,18 @@ class SpeedWindSlotTest {
         val on =
             HUDConfig(leftSlot = HUDSlotConfig(field = HUDSlotField.Wind, windShowSpeed = true))
         assertTrue(json.decodeFromString<HUDConfig>(json.encodeToString(on)).leftSlot.windShowSpeed)
+    }
+
+    @Test
+    fun wind_speed_rounds_like_the_headwind_number() {
+        assertEquals("15", wind(225.0, 12.4, 14.6).windSpeedRow)
+        assertEquals("0", wind(90.0, 0.0, 0.3).windSpeedRow)
+    }
+
+    @Test
+    fun wind_speed_font_shrinks_only_to_fit_the_box() {
+        assertEquals(33f, windSpeedFontPx(33f, probeWidthPx = 20f, boxPx = 28), 1e-6f)
+        assertEquals(33f * 28f / 40f, windSpeedFontPx(33f, probeWidthPx = 40f, boxPx = 28), 1e-4f)
+        assertTrue(windSpeedFontPx(33f, probeWidthPx = 100f, boxPx = 28) < 33f)
     }
 }

@@ -27,6 +27,9 @@ data class FieldState(
     // The Wind HUD slot with Show speed: the ride speed drawn above the wind number. Null
     // otherwise.
     val speedRow: String? = null,
+    // The Wind slot's total wind speed, drawn above the arrow when Show speed is on. Null
+    // otherwise.
+    val windSpeedRow: String? = null,
 ) {
     companion object {
         fun searching(label: String = "", iconRes: Int? = null) =

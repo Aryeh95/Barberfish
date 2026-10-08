@@ -12,7 +12,8 @@ internal fun HUDWindCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit)
         label = "SHOW SPEED",
         value = slot.windShowSpeed,
         onChange = { onUpdate(slot.copy(windShowSpeed = it)) },
-        help = "Ride speed above the wind. Color stays on the wind.",
+        help =
+            "Ride speed above the wind, wind speed above the arrow. Color stays on the headwind.",
     )
     if (slot.windShowSpeed) {
         ControlLabel("SMOOTHING")

@@ -16,6 +16,16 @@ internal const val SPEED_WIND_ROW_GAP_PX = 4f
 /** Share of a row's band a digit fills. Same value as TWO_ROW_DIGIT_FILL in BitmapValue.kt. */
 internal const val SPEED_WIND_DIGIT_FILL = 0.86f
 
+/** Width the total wind speed is fitted for, so one- and two-digit speeds share a size. */
+internal const val SPEED_WIND_SPEED_PROBE = "88"
+
+/**
+ * Font size for the total wind speed above the arrow: the main font, shrunk only if the probe would
+ * not fit the arrow's box. Never larger than [fontPx].
+ */
+internal fun windSpeedFontPx(fontPx: Float, probeWidthPx: Float, boxPx: Int): Float =
+    if (probeWidthPx > boxPx) fontPx * boxPx / probeWidthPx else fontPx
+
 /** Where the speed-over-wind stack puts things, in px. */
 internal data class SpeedWindGeometry(
     val bandPx: Float,
@@ -42,7 +52,8 @@ internal fun speedWindGeometry(bitmapHeightPx: Int, density: Float): SpeedWindGe
  * [renderWindArrowValueBitmap] places it. Both numbers share one font, sized so a digit fills
  * [SPEED_WIND_DIGIT_FILL] of a band and shrunk only if the wider row does not fit, and share one
  * edge per [alignment]. A null [angleDeg] (calm) leaves the arrow column empty so nothing moves.
- * Colour stays on the wind number; speed and arrow take the header colour.
+ * [windSpeedText], the total wind speed, sits in the arrow column of the top row: wind strength
+ * over wind direction. Colour stays on the wind number; speed and arrow take the header colour.
  */
 // Suppressed: matches the sibling renderers (renderWindArrowValueBitmap, renderTwoRowValueBitmap),
 // one parameter per independent input.
@@ -58,6 +69,7 @@ fun renderSpeedWindValueBitmap(
     arrowColor: Int,
     alignment: ViewConfig.Alignment,
     context: Context,
+    windSpeedText: String? = null,
 ): Bitmap {
     val geo = speedWindGeometry(bitmapHeightPx, context.resources.displayMetrics.density)
     val width = cellWidthPx.toInt().coerceAtLeast(1)
@@ -105,6 +117,7 @@ fun renderSpeedWindValueBitmap(
     val windTop = geo.bandPx + geo.rowGapPx
     drawRow(speedText, 0f, speedColor)
     drawRow(windText, windTop, windColor)
+    windSpeedText?.let { canvas.drawWindSpeed(it, geo, fontPx, arrowColor) }
 
     if (angleDeg != null) {
         // The developer's arrow, rasterised 1:1 into its own box through the public renderer.
@@ -152,4 +165,22 @@ internal fun speedWindValueBitmap(
         arrowColor = colors.headerText.toArgb(),
         alignment = alignment,
         context = context,
+        windSpeedText = field.windSpeedRow,
     )
+
+/** The total wind speed centred in the arrow column of the top row, in the header colour. */
+private fun Canvas.drawWindSpeed(text: String, geo: SpeedWindGeometry, fontPx: Float, color: Int) {
+    val paint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = Typeface.create("relative", Typeface.NORMAL)
+            letterSpacing = LETTER_SPACING
+            textAlign = Paint.Align.CENTER
+            this.color = color
+            textSize = fontPx
+        }
+    val probe = if (text.length > SPEED_WIND_SPEED_PROBE.length) text else SPEED_WIND_SPEED_PROBE
+    paint.textSize = windSpeedFontPx(fontPx, paint.measureText(probe), geo.boxPx)
+    val bounds = Rect()
+    paint.getTextBounds(text, 0, text.length, bounds)
+    drawText(text, geo.boxPx / 2f, geo.bandPx / 2f - (bounds.top + bounds.bottom) / 2f, paint)
+}
