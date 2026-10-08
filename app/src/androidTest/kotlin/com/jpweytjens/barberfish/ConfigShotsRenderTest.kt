@@ -310,6 +310,53 @@ class ConfigShotsRenderTest {
         captureTall("hud_config", scrollState)
     }
 
+    // The Wind column selected, with and without Show speed, so its slot card shows the switch.
+    private fun windShot(name: String, showSpeed: Boolean) {
+        val scrollState = ScrollState(0)
+        setShotContent(scrollable = true, scrollState = scrollState) {
+            var hudConfig by remember {
+                mutableStateOf(
+                    HUDConfig(
+                        columns = 3,
+                        leftSlot =
+                            HUDSlotConfig(
+                                field = HUDSlotField.Wind,
+                                colorMode = ZoneColorMode.TEXT,
+                                windShowSpeed = showSpeed,
+                            ),
+                        middleSlot =
+                            HUDSlotConfig(field = HUDSlotField.HR, colorMode = ZoneColorMode.TEXT),
+                        rightSlot =
+                            HUDSlotConfig(
+                                field = HUDSlotField.Power,
+                                colorMode = ZoneColorMode.TEXT,
+                            ),
+                    )
+                )
+            }
+            var sparklineConfig by remember {
+                mutableStateOf(SparklineConfig(mode = SparklineMode.ON))
+            }
+            CollapsibleSection(section = ConfigSection.HUD, expanded = true, onToggle = {}) {
+                HUDConfigSection(
+                    hudConfig = hudConfig,
+                    sparklineConfig = sparklineConfig,
+                    zoneConfig = houseZones,
+                    timeCfg = TimeConfig(),
+                    profile = shotProfile,
+                    onUpdate = { hudConfig = it },
+                    onSparklineUpdate = { sparklineConfig = it },
+                    initialSelectedSlot = 0,
+                )
+            }
+        }
+        captureTall(name, scrollState)
+    }
+
+    @Test fun windSpeedConfig() = windShot("hud_config_wind_speed", showSpeed = true)
+
+    @Test fun windConfig() = windShot("hud_config_wind", showSpeed = false)
+
     @Test
     fun gradeMapConfig() {
         // Own tuning rather than the default sync with the profile, so the shot shows every
