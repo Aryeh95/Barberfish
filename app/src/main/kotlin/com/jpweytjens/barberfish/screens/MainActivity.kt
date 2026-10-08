@@ -66,6 +66,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.onFocusChanged
@@ -110,6 +111,7 @@ import com.jpweytjens.barberfish.datatype.NPField
 import com.jpweytjens.barberfish.datatype.PowerField
 import com.jpweytjens.barberfish.datatype.PowerZoneField
 import com.jpweytjens.barberfish.datatype.SpeedField
+import com.jpweytjens.barberfish.datatype.WindField
 import com.jpweytjens.barberfish.datatype.applySparklineHeaderChrome
 import com.jpweytjens.barberfish.datatype.formatTime
 import com.jpweytjens.barberfish.datatype.shared.BackButtonTint
@@ -120,6 +122,7 @@ import com.jpweytjens.barberfish.datatype.shared.Grey100
 import com.jpweytjens.barberfish.datatype.shared.Grey200
 import com.jpweytjens.barberfish.datatype.shared.Grey400
 import com.jpweytjens.barberfish.datatype.shared.Grey500
+import com.jpweytjens.barberfish.datatype.shared.HEADWIND_PACKAGE
 import com.jpweytjens.barberfish.datatype.shared.OceanBlue
 import com.jpweytjens.barberfish.datatype.shared.PREVIEW_DELAY_MS
 import com.jpweytjens.barberfish.datatype.shared.RDYLGN_GREEN
@@ -172,6 +175,8 @@ import com.jpweytjens.barberfish.extension.SpeedThresholdSource
 import com.jpweytjens.barberfish.extension.ThresholdMode
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.TimeFormat
+import com.jpweytjens.barberfish.extension.WindFieldConfig
+import com.jpweytjens.barberfish.extension.WindSockConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.ZoneDisplayMode
@@ -198,6 +203,8 @@ import com.jpweytjens.barberfish.extension.savePowerZoneFieldConfig
 import com.jpweytjens.barberfish.extension.saveRouteRemainingConfig
 import com.jpweytjens.barberfish.extension.saveSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.saveTimeConfig
+import com.jpweytjens.barberfish.extension.saveWindFieldConfig
+import com.jpweytjens.barberfish.extension.saveWindSockConfig
 import com.jpweytjens.barberfish.extension.saveZoneConfig
 import com.jpweytjens.barberfish.extension.streamConfigSnapshot
 import com.jpweytjens.barberfish.extension.streamUserProfile
@@ -212,6 +219,9 @@ private val STACK_ORDER_OPTIONS = listOf(false to "Distance", true to "Climb")
 class MainActivity : ComponentActivity() {
 
     private lateinit var karooSystem: KarooSystemService
+
+    // Re-checked on every resume: the rider may install Headwind and come straight back.
+    private var headwindInstalled by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -235,6 +245,20 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        headwindInstalled = isHeadwindInstalled()
+    }
+
+    // The two-argument overload is the one that runs on the Karoo's Android versions;
+    // the flags overload exists only from API 33. A disabled Headwind cannot stream either,
+    // so it counts as absent.
+    @Suppress("DEPRECATION")
+    private fun isHeadwindInstalled(): Boolean = runCatching {
+        packageManager.getApplicationInfo(HEADWIND_PACKAGE, 0).enabled
+    }
+        .getOrDefault(false)
+
     override fun onDestroy() {
         karooSystem.disconnect()
         super.onDestroy()
@@ -257,6 +281,8 @@ class MainActivity : ComponentActivity() {
         var hrZoneFieldConfig by remember { mutableStateOf(HRZoneFieldConfig()) }
         var speedFieldConfig by remember { mutableStateOf(SpeedFieldConfig()) }
         var cadenceFieldConfig by remember { mutableStateOf(CadenceFieldConfig()) }
+        var windFieldConfig by remember { mutableStateOf(WindFieldConfig()) }
+        var windSockConfig by remember { mutableStateOf(WindSockConfig()) }
         var avgPowerFieldConfig by remember { mutableStateOf(AvgPowerFieldConfig()) }
         var npFieldConfig by remember { mutableStateOf(NPFieldConfig()) }
         var lapPowerFieldConfig by remember { mutableStateOf(LapPowerFieldConfig()) }
@@ -317,6 +343,8 @@ class MainActivity : ComponentActivity() {
                     hrZoneFieldConfig = snapshot.hrZoneField
                     speedFieldConfig = snapshot.speedField
                     cadenceFieldConfig = snapshot.cadenceField
+                    windFieldConfig = snapshot.windField
+                    windSockConfig = snapshot.windSock
                     avgPowerFieldConfig = snapshot.avgPowerField
                     npFieldConfig = snapshot.npField
                     lapPowerFieldConfig = snapshot.lapPowerField
@@ -440,6 +468,8 @@ class MainActivity : ComponentActivity() {
                         remember(cadenceFieldConfig) {
                             CadenceField.previewStates(cadenceFieldConfig)
                         }
+                    val windPreviewStates =
+                        remember(windFieldConfig) { WindField.previewStates(windFieldConfig) }
                     val avgPowerPreviewStates =
                         remember(avgPowerFieldConfig, userProfile, zoneConfig) {
                             AvgPowerField.previewStates(
@@ -1040,6 +1070,55 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                             )
+                        }
+
+                        ControlLabel("WIND", modifier = Modifier.padding(top = 8.dp))
+                        Box(Modifier.alpha(if (headwindInstalled) 1f else 0.45f)) {
+                            FieldCard(
+                                title = "WIND",
+                                typeId = "wind",
+                                description =
+                                    "Headwind speed and direction, from the Headwind extension.",
+                                previewFields = windPreviewStates,
+                                colorMode = windFieldConfig.colorMode,
+                                selected = selectedDataField == "WIND",
+                                onSelect = {
+                                    selectedDataField =
+                                        if (selectedDataField == "WIND") null else "WIND"
+                                },
+                            ) {
+                                if (!headwindInstalled) {
+                                    HelperText("Install the Headwind extension to use wind.")
+                                } else {
+                                    HelperText(
+                                        "Speed bins assume the Headwind extension's default unit " +
+                                            "for your profile (km/h or mph)."
+                                    )
+                                    ZoneColorSlider(
+                                        selected = windFieldConfig.colorMode,
+                                        onSelected = { mode ->
+                                            windFieldConfig = windFieldConfig.copy(colorMode = mode)
+                                            lifecycleScope.launch {
+                                                saveWindFieldConfig(windFieldConfig)
+                                            }
+                                        },
+                                    )
+                                    BoolToggleRow(
+                                        label = "SHOW ON MAP",
+                                        value = windSockConfig.enabled,
+                                        onChange = { on ->
+                                            windSockConfig = windSockConfig.copy(enabled = on)
+                                            lifecycleScope.launch {
+                                                saveWindSockConfig(windSockConfig)
+                                            }
+                                        },
+                                        help =
+                                            "A windsock ahead of your position, longer with more " +
+                                                "wind. On a north-up map it shows true wind " +
+                                                "direction.",
+                                    )
+                                }
+                            }
                         }
 
                         ControlLabel("CLIMBING", modifier = Modifier.padding(top = 8.dp))

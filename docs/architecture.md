@@ -253,3 +253,49 @@ Zone coloring and threshold coloring produce a `FieldColor` sealed variant. `Fie
 `BarberfishView` reads the current system theme from `Configuration.UI_MODE_NIGHT_MASK` and threads an `isNightMode: Boolean` through `toColorConfig`. The flag forwards into `powerZoneColor`, `hrZoneColor`, and `gradeColor`, which pick between the `*ColorsReadableDark` and `*ColorsReadableLight` palette variants so Text-mode fields stay readable on either background.
 
 `colorMode = BACKGROUND` is theme-agnostic: the cell fills with the original brand palette and the overlay text is chosen per cell by [`bestTextOnBackground`](../app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared/ZoneColoring.kt), whichever of black or white gives the higher APCA `|Lc|` against that specific fill. The contrast methodology is in [Color palettes](color-palettes.md).
+
+## Wind sock
+
+Barberfish reads wind from the Headwind extension (`karoo-headwind`) through the
+same stream helper every field uses, with extension-qualified ids
+(`TYPE_EXT::karoo-headwind::windDirection` and so on). The rideapp serves any
+extension's streams to any other, and the Headwind README invites it.
+
+The map gets a windsock seen from above. Its geometry lives in
+`WindSockGeometry`; the five drawables are generated from the same numbers by
+`scripts/gen_wind_sock_drawables.py`, and `WindSockDrawablesTest` pins the two.
+
+On the map, `WindSockController` keeps one symbol on a mast 53 dp ahead of the
+puck along the course, oriented to the absolute direction the wind blows toward.
+The map rotates symbols with itself, so the same bearing reads relative to the
+rider on a heading-up map and true on a north-up map; the rideapp does not
+expose which mode is active, and absolute is the choice that is right on a map
+in both. Calm hides the symbol.
+
+The `Wind` field gets a plain line arrow, not the sock: the number beside it
+already carries strength, so the glyph carries direction only. `WindArrowGeometry`
+holds its proportions and `renderWindArrowValueBitmap` composes it into the value
+bitmap, rotated by the rider-relative angle about the centre of a box the height
+of the value, in the cell's header text colour so colour stays on the number.
+The number takes the remaining width through the usual `fontSizeForCell` shrink.
+Strength on the map follows the airfield rule, one band per 3 knots, five at
+most; calm draws no arrow in the field. Speed arrives in the Headwind
+extension's configured unit, which Barberfish cannot read; it assumes that
+extension's default for the Karoo profile (km/h or mph).
+
+Non-streaming states. The Headwind extension caches its forecast, interpolates
+between forecast hours by the clock, and reports no data age, so staleness is
+not detectable from outside and Barberfish does not fake one. Its streams keep
+emitting while a forecast is missing (zeros) and while the fix has no course
+(a tailwind at full strength), so `WindField` applies its own rule,
+`heldWindState`: a text state always shows; with a course the fresh reading
+shows; without one the last live reading is held, ungreyed; before any live
+reading, "Searching…". The course comes from `streamRiderFix`, shared with the
+map sock, which holds it at the last non-null value. Every stream state other
+than streaming reads "No wind data", with `noSensor` so a HUD column
+collapses.
+
+App detection lives in the config screen only: `MainActivity` asks the package
+manager for the Headwind package on every resume (the manifest's `<queries>`
+entry makes it visible) and greys the Wind card with an install hint when it is
+absent. The field and the map sock work from the streams alone.

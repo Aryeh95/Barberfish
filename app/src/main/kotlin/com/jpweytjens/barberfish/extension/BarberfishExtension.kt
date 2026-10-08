@@ -32,6 +32,7 @@ import com.jpweytjens.barberfish.datatype.TimeField
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.ValueField
 import com.jpweytjens.barberfish.datatype.ValueKind
+import com.jpweytjens.barberfish.datatype.WindField
 import com.jpweytjens.barberfish.datatype.shared.EffectiveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.GRADE_MAP_REJOIN_CASING_ID
 import com.jpweytjens.barberfish.datatype.shared.GRADE_MAP_REJOIN_ID
@@ -41,6 +42,8 @@ import com.jpweytjens.barberfish.datatype.shared.LatLng
 import com.jpweytjens.barberfish.datatype.shared.RerouteRed
 import com.jpweytjens.barberfish.datatype.shared.RideVisibility
 import com.jpweytjens.barberfish.datatype.shared.RouteIndex
+import com.jpweytjens.barberfish.datatype.shared.WIND_DIRECTION_STREAM
+import com.jpweytjens.barberfish.datatype.shared.WIND_SPEED_STREAM
 import com.jpweytjens.barberfish.datatype.shared.buildGradeMapSpecs
 import com.jpweytjens.barberfish.datatype.shared.buildRejoinSpecs
 import com.jpweytjens.barberfish.datatype.shared.buildRouteIndex
@@ -57,6 +60,9 @@ import com.jpweytjens.barberfish.datatype.shared.nativeChevronWindowHalfM
 import com.jpweytjens.barberfish.datatype.shared.polylineAxisProgressM
 import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.selectChevrons
+import com.jpweytjens.barberfish.datatype.shared.windSockBands
+import com.jpweytjens.barberfish.datatype.shared.windSockSymbol
+import com.jpweytjens.barberfish.datatype.shared.windUnitFor
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.extension.KarooExtension
 import io.hammerhead.karooext.internal.Emitter
@@ -66,6 +72,7 @@ import io.hammerhead.karooext.models.OnLocationChanged
 import io.hammerhead.karooext.models.OnMapZoomLevel
 import io.hammerhead.karooext.models.OnNavigationState
 import io.hammerhead.karooext.models.StreamState
+import io.hammerhead.karooext.models.Symbol
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -136,6 +143,7 @@ fun barberfishDataTypes(karooSystem: KarooSystemService): List<BarberfishBase<*>
         AvgSpeedField(karooSystem, includePaused = false),
         // Other
         CadenceField(karooSystem),
+        WindField(karooSystem),
         GradeField(karooSystem),
         ElevationSparklineField(karooSystem),
         // Distance & route-remaining
@@ -583,9 +591,49 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                 }
             }
         }
+        val windSockController = WindSockController()
+        val windJob: Job = scope.launch {
+            // A dead generation may have left the sock painted; start clean.
+            windSockController.clear(emitter)
+            val fixFlow = karooSystem.streamRiderFix()
+            val zoomFlow =
+                karooSystem
+                    .consumerFlow<OnMapZoomLevel>()
+                    .map { it.zoomLevel }
+                    .onStart {
+                        emit(SEED_ZOOM)
+                    }
+            val windFlow =
+                combine(
+                    karooSystem.streamDataFlow(WIND_DIRECTION_STREAM),
+                    karooSystem.streamDataFlow(WIND_SPEED_STREAM),
+                    karooSystem.streamUserProfile(),
+                ) { direction, speed, profile ->
+                    val from =
+                        (direction as? StreamState.Streaming)
+                            ?.dataPoint
+                            ?.values
+                            ?.get(DataType.Field.SINGLE)
+                    val kph =
+                        (speed as? StreamState.Streaming)
+                            ?.dataPoint
+                            ?.values
+                            ?.get(DataType.Field.SINGLE)
+                    from to (kph?.let { windSockBands(it, windUnitFor(profile)) } ?: 0)
+                }
+            combine(applicationContext.streamWindSockConfig(), fixFlow, zoomFlow, windFlow) {
+                    cfg,
+                    (fix, course),
+                    zoom,
+                    (from, bands) ->
+                    WindInputs(cfg.enabled, fix, course, zoom, from, bands)
+                }
+                .collect { w -> windSockController.emit(emitter, w.toSockSymbol(density)) }
+        }
         emitter.setCancellable {
             Timber.d("grademap: startMap cancelled")
             job.cancel()
+            windJob.cancel()
             scope.cancel()
         }
     }
@@ -698,3 +746,22 @@ private data class ViewportSignature(
     val zoomLevel: Double,
     val latBucket: Long,
 )
+
+// One collected snapshot of the wind sock's four independent inputs.
+private data class WindInputs(
+    val enabled: Boolean,
+    val fix: LatLng?,
+    val courseDeg: Double?,
+    val zoom: Double,
+    val windFromDeg: Double?,
+    val bands: Int,
+)
+
+// Suppressed: four independent readiness gates on one flow snapshot are the sock's actual
+// precondition; splitting them would either lose the null-safety smart cast or invent a type
+// for one call.
+@Suppress("ComplexCondition")
+private fun WindInputs.toSockSymbol(density: Float): Symbol.Icon? =
+    if (enabled && fix != null && courseDeg != null && windFromDeg != null)
+        windSockSymbol(fix, courseDeg, zoom, density, windFromDeg, bands)
+    else null

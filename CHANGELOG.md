@@ -34,6 +34,11 @@ New defaults (saved settings are kept):
 - Speed starts unsmoothed instead of at 3s
 - Power Zone and HR Zone start with one decimal
 
+Wind (needs the Headwind extension):
+- A Wind field and HUD slot: the headwind or tailwind speed, colored by the threshold scale, with an arrow showing where the wind blows relative to you
+- A windsock on the map ahead of your position, longer with more wind, switched on in the Wind card
+- The Wind card greys out with an install hint when the Headwind extension is missing
+
 Fixes:
 - Global POIs now show on the elevation profile, not only the route's own. Thanks to Theolean for the report.
 - Profile no longer goes blank when the HUD sparkline is set to Climbs or Off. Thanks to Jamie Bishop for the report.
