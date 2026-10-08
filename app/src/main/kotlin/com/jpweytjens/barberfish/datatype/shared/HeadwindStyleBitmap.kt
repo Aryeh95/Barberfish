@@ -48,7 +48,7 @@ internal const val HEADWIND_SPEED_PROBE = "88.8"
 internal const val HEADWIND_SUMMARY_PROBE = "-88▲88"
 
 /** Share of the value height the corner icon takes when the header is off. */
-internal const val HEADWIND_ICON_SHARE = 0.22f
+internal const val HEADWIND_ICON_SHARE = 0.32f
 
 /** [text], or [probe] when that is longer: the width the layout is fitted for. */
 internal fun fitText(text: String, probe: String): String =
@@ -110,14 +110,14 @@ fun renderHeadwindStyleBitmap(
 }
 
 /** The value font for the Headwind layout: right-aligned, rows centred on their digits. */
-private class HeadwindText(private val color: Int) {
+private class HeadwindText(private val textColor: Int) {
     private val bounds = Rect()
 
     fun paint(sizePx: Float) =
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = Typeface.create("relative", Typeface.NORMAL)
             textSize = sizePx
-            this.color = color
+            color = textColor
             letterSpacing = LETTER_SPACING
             textAlign = Paint.Align.RIGHT
         }
