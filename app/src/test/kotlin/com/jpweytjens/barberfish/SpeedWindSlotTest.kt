@@ -399,10 +399,12 @@ class SpeedWindSlotTest {
         val plain = headwindStyleGeometry(108, 0f)
         assertEquals(108f, plain.arrowPx, 1e-4f)
         assertEquals(0f, plain.arrowTopPx, 1e-6f)
-        val icon = headwindStyleGeometry(108, 24f)
-        assertTrue(icon.arrowTopPx > 24f)
-        assertEquals(108f, icon.arrowTopPx + icon.arrowPx, 1e-4f)
-        assertEquals(108f, icon.speedBandPx + icon.summaryBandPx, 1e-4f)
+        val reserved = headwindStyleGeometry(108, 30f)
+        assertEquals(30f, reserved.arrowTopPx, 1e-6f)
+        assertEquals(108f, reserved.arrowTopPx + reserved.arrowPx, 1e-4f)
+        assertEquals(108f, reserved.speedBandPx + reserved.summaryBandPx, 1e-4f)
+        // The reserve never eats more than half the height.
+        assertEquals(54f, headwindStyleGeometry(108, 90f).arrowTopPx, 1e-6f)
     }
 
     @Test

@@ -20,35 +20,29 @@ internal const val HEADWIND_SPEED_SHARE = 0.62f
 /** Gap between the left column and the numbers, as a share of the arrow size. */
 internal const val HEADWIND_GAP_RATIO = 0.08f
 
-/** Gap between the corner icon and the arrow below it, as a share of the icon size. */
-internal const val HEADWIND_ICON_GAP_RATIO = 0.15f
-
 /** Sizes for the Headwind-style value, in px, before any shrink to fit the width. */
 internal data class HeadwindStyleGeometry(
     val speedBandPx: Float,
     val summaryBandPx: Float,
-    val iconPx: Float,
     val arrowTopPx: Float,
     val arrowPx: Float,
 )
 
 /**
  * The speed row takes [HEADWIND_SPEED_SHARE] of [heightPx] and the summary the rest. The arrow
- * spans the height, or, with a corner icon of [iconPx], the height left below the icon.
+ * spans the height below [topReservePx], the space kept clear for the header icon when the header
+ * row is hidden (0 with the header shown).
  */
-internal fun headwindStyleGeometry(heightPx: Int, iconPx: Float): HeadwindStyleGeometry {
+internal fun headwindStyleGeometry(heightPx: Int, topReservePx: Float): HeadwindStyleGeometry {
     val h = heightPx.toFloat()
     val speedBand = h * HEADWIND_SPEED_SHARE
-    val arrowTop = if (iconPx > 0f) iconPx * (1f + HEADWIND_ICON_GAP_RATIO) else 0f
-    return HeadwindStyleGeometry(speedBand, h - speedBand, iconPx, arrowTop, h - arrowTop)
+    val top = topReservePx.coerceIn(0f, h / 2f)
+    return HeadwindStyleGeometry(speedBand, h - speedBand, top, h - top)
 }
 
 /** Widest-case texts the fit is measured against, so the layout holds still as values change. */
 internal const val HEADWIND_SPEED_PROBE = "88.8"
 internal const val HEADWIND_SUMMARY_PROBE = "-88▲88"
-
-/** Share of the value height the corner icon takes when the header is off. */
-internal const val HEADWIND_ICON_SHARE = 0.32f
 
 /** [text], or [probe] when that is longer: the width the layout is fitted for. */
 internal fun fitText(text: String, probe: String): String =
@@ -57,10 +51,11 @@ internal fun fitText(text: String, probe: String): String =
 /**
  * The Wind slot in karoo-headwind's Tailwind & ride speed layout: a wind arrow rotated by
  * [angleDeg] on the left, [speed] on top and the [summary] line below, both right-aligned against
- * each other, everything in [color]. With [iconRes] (header off) the icon sits at the top of the
- * left column, tinted [iconTint], and the arrow below it. The group is aligned per [alignment] and
- * shrunk as one to fit [cellWidthPx]. The fit uses widest-case probes, so the arrow and digits hold
- * still as the values change width.
+ * each other, everything in [color]. With the header hidden, [topReservePx] keeps the top of the
+ * left column clear for the header icon and the arrow sits below it; [rightInsetPx] keeps the
+ * numbers clear of a header icon on the right (LEFT alignment puts the icons there). The group is
+ * aligned per [alignment] and shrunk as one to fit [cellWidthPx]. The fit uses widest-case probes,
+ * so the arrow and digits hold still as the values change width.
  */
 @Suppress("LongParameterList")
 fun renderHeadwindStyleBitmap(
@@ -70,39 +65,36 @@ fun renderHeadwindStyleBitmap(
     bitmapHeightPx: Int,
     cellWidthPx: Float,
     color: Int,
-    iconTint: Int,
-    iconRes: Int?,
+    topReservePx: Float,
+    rightInsetPx: Float,
     alignment: ViewConfig.Alignment,
     context: Context,
 ): Bitmap {
     val width = cellWidthPx.toInt().coerceAtLeast(1)
-    val geo =
-        headwindStyleGeometry(
-            bitmapHeightPx,
-            if (iconRes != null) bitmapHeightPx * HEADWIND_ICON_SHARE else 0f,
-        )
+    val geo = headwindStyleGeometry(bitmapHeightPx, topReservePx)
     val text = HeadwindText(color)
     val speedPx = text.sizeForBand(geo.speedBandPx, 0.9f)
     val summaryPx = text.sizeForBand(geo.summaryBandPx, 0.8f)
-    val column = maxOf(geo.arrowPx, geo.iconPx) * (1f + HEADWIND_GAP_RATIO)
+    val column = geo.arrowPx * (1f + HEADWIND_GAP_RATIO)
     val textW =
         maxOf(
             text.width(fitText(speed, HEADWIND_SPEED_PROBE), speedPx),
             text.width(fitText(summary, HEADWIND_SUMMARY_PROBE), summaryPx),
         )
-    val scale = (width / (column + textW)).coerceAtMost(1f)
+    val room = (width - rightInsetPx).coerceAtLeast(1f)
+    val scale = (room / (column + textW)).coerceAtMost(1f)
     val groupW = (column + textW) * scale
     val left =
         when (alignment) {
             ViewConfig.Alignment.LEFT -> 0f
-            ViewConfig.Alignment.CENTER -> (width - groupW) / 2f
-            ViewConfig.Alignment.RIGHT -> width - groupW
+            ViewConfig.Alignment.CENTER -> (room - groupW) / 2f
+            ViewConfig.Alignment.RIGHT -> room - groupW
         }
 
     val bitmap = createBitmap(width, bitmapHeightPx)
     bitmap.density = Bitmap.DENSITY_NONE
     val canvas = Canvas(bitmap)
-    canvas.drawHeadwindGlyphs(context, geo, left, scale, angleDeg, color, iconRes, iconTint)
+    if (angleDeg != null) canvas.drawHeadwindArrow(context, geo, left, scale, angleDeg, color)
     val right = left + groupW
     text.drawRow(canvas, speed, speedPx * scale, right, 0f, geo.speedBandPx)
     text.drawRow(canvas, summary, summaryPx * scale, right, geo.speedBandPx, geo.summaryBandPx)
@@ -149,32 +141,22 @@ private class HeadwindText(private val textColor: Int) {
     }
 }
 
-/** The corner icon (header off) and the rotated arrow in the left column. */
+/** The arrow in the left column, rotated by [angleDeg] about its own centre. */
 @Suppress("LongParameterList")
-private fun Canvas.drawHeadwindGlyphs(
+private fun Canvas.drawHeadwindArrow(
     context: Context,
     geo: HeadwindStyleGeometry,
     left: Float,
     scale: Float,
-    angleDeg: Float?,
+    angleDeg: Float,
     color: Int,
-    iconRes: Int?,
-    iconTint: Int,
 ) {
     val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { isFilterBitmap = true }
-    if (iconRes != null) {
-        val size = (geo.iconPx * scale).toInt().coerceAtLeast(1)
-        val icon = tintedGlyph(context, iconRes, iconTint, size)
-        drawBitmap(icon, null, RectF(left, 0f, left + size, size.toFloat()), paint)
-    }
-    if (angleDeg != null) {
-        val size = geo.arrowPx * scale
-        val top = geo.arrowTopPx + (geo.arrowPx - size) / 2f
-        val arrow =
-            tintedGlyph(context, R.drawable.ic_wind_arrow, color, size.toInt().coerceAtLeast(1))
-        withRotation(angleDeg, left + size / 2f, top + size / 2f) {
-            drawBitmap(arrow, null, RectF(left, top, left + size, top + size), paint)
-        }
+    val size = geo.arrowPx * scale
+    val top = geo.arrowTopPx + (geo.arrowPx - size) / 2f
+    val arrow = tintedGlyph(context, R.drawable.ic_wind_arrow, color, size.toInt().coerceAtLeast(1))
+    withRotation(angleDeg, left + size / 2f, top + size / 2f) {
+        drawBitmap(arrow, null, RectF(left, top, left + size, top + size), paint)
     }
 }
 

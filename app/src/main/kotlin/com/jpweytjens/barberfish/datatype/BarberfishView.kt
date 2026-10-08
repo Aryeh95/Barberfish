@@ -252,7 +252,7 @@ private fun makeFieldRemoteViews(
             cellWidthPx,
         )
 
-    if (field.hideHeader) hideFieldHeader(rv)
+    if (field.hideHeader) hideFieldHeader(rv, field)
     val valueBitmap =
         if (field.speedRow != null || field.headwindLayout) {
             // Wind slot with Show speed (custom build): speed over the wind.
@@ -262,6 +262,7 @@ private fun makeFieldRemoteViews(
                 bitmapHeightPx,
                 cellWidthPx,
                 colors,
+                sizeConfig,
                 alignment,
                 context,
             )

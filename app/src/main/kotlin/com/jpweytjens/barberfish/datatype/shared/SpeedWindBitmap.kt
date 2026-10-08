@@ -153,10 +153,12 @@ internal fun speedWindValueBitmap(
     bitmapHeightPx: Int,
     cellWidthPx: Float,
     colors: ColorConfig,
+    sizeConfig: ViewSizeConfig,
     alignment: ViewConfig.Alignment,
     context: Context,
 ): Bitmap =
-    if (field.headwindLayout)
+    if (field.headwindLayout) {
+        val (topReserve, rightInset) = headerIconReserve(field, sizeConfig, alignment, context)
         renderHeadwindStyleBitmap(
             speed = valueText,
             summary = field.secondary.orEmpty(),
@@ -164,12 +166,12 @@ internal fun speedWindValueBitmap(
             bitmapHeightPx = bitmapHeightPx,
             cellWidthPx = cellWidthPx,
             color = colors.valueText.toArgb(),
-            iconTint = colors.iconTint.toArgb(),
-            iconRes = if (field.hideHeader) field.secondaryIconRes else null,
+            topReservePx = topReserve,
+            rightInsetPx = rightInset,
             alignment = alignment,
             context = context,
         )
-    else
+    } else
         renderSpeedWindValueBitmap(
             speedText = field.speedRow.orEmpty().replace(',', '.'),
             windText = valueText,
@@ -214,8 +216,61 @@ internal fun speedWindBitmapHeightPx(
     return if (field.hideHeader) value + (sizeConfig.headerMinHeightDp * density).toInt() else value
 }
 
-/** Hides the header row and its height probe, so the value box starts at the cell top. */
-internal fun hideFieldHeader(rv: RemoteViews) {
-    rv.setViewVisibility(R.id.field_header, View.GONE)
+/** Gap between the header icon and the arrow below it, in dp. */
+internal const val HEADER_ICON_ARROW_GAP_DP = 2f
+
+/**
+ * Bottom of the header icon from the cell top, in px, plus a small gap: the icon is centred in the
+ * HUD header band, which reserves two label lines.
+ */
+internal fun headerIconBottomPx(sizeConfig: ViewSizeConfig, density: Float): Float {
+    // HUD slots reserve two label lines; a lone full-width column uses its layout's own count.
+    val lines = if (sizeConfig.colSpan < FULL_WIDTH_SPAN / 2) 2 else sizeConfig.labelMaxLines
+    val band = headerHeightPx(sizeConfig.headerFontSize.value, lines, density).toFloat()
+    val icon = sizeConfig.headerIconSize.value * density
+    return (band + icon) / 2f + HEADER_ICON_ARROW_GAP_DP * density
+}
+
+/** Span of a full-width cell in the 60-unit grid. */
+private const val FULL_WIDTH_SPAN = 60
+
+/**
+ * Space the Headwind layout keeps clear for the header icon when the header row is hidden, as
+ * (above the arrow, right of the numbers). The icon sits on the left above the arrow, except with
+ * LEFT alignment, where the header puts its icons on the right. Nothing when no icon is drawn.
+ */
+internal fun headerIconReserve(
+    field: FieldState,
+    sizeConfig: ViewSizeConfig,
+    alignment: ViewConfig.Alignment,
+    context: Context,
+): Pair<Float, Float> {
+    val density = context.resources.displayMetrics.density
+    val iconShown =
+        field.hideHeader &&
+            sizeConfig.showIcons &&
+            (field.secondaryIconRes ?: field.iconRes) != null
+    return when {
+        !iconShown -> 0f to 0f
+        alignment == ViewConfig.Alignment.LEFT ->
+            0f to (sizeConfig.headerIconSize.value + 2 * HEADER_ICON_ARROW_GAP_DP) * density
+        else -> headerIconBottomPx(sizeConfig, density) to 0f
+    }
+}
+
+/**
+ * Header off: the value box starts at the cell top and takes the header's height. In the Headwind
+ * layout the header row stays in place with its label hidden, so the wind icon sits exactly where
+ * the other slots' icons do. Any other layout (the plain wind state the slot falls back to) hides
+ * the whole header row, since its full-height arrow has no room left for the icon.
+ */
+internal fun hideFieldHeader(rv: RemoteViews, field: FieldState) {
     rv.setViewVisibility(R.id.header_ref, View.GONE)
+    if (!field.headwindLayout) {
+        rv.setViewVisibility(R.id.field_header, View.GONE)
+        return
+    }
+    rv.setViewVisibility(R.id.field_label, View.INVISIBLE)
+    rv.setViewVisibility(R.id.field_icon_secondary, View.GONE)
+    (field.secondaryIconRes ?: field.iconRes)?.let { rv.setImageViewResource(R.id.field_icon, it) }
 }
