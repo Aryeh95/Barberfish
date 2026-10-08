@@ -52,6 +52,7 @@ import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.SparklineMode
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.TimeConfig
+import com.jpweytjens.barberfish.extension.WindLayout
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.screens.CollapsibleSection
@@ -311,7 +312,12 @@ class ConfigShotsRenderTest {
     }
 
     // The Wind column selected, with and without Show speed, so its slot card shows the switch.
-    private fun windShot(name: String, showSpeed: Boolean) {
+    private fun windShot(
+        name: String,
+        showSpeed: Boolean,
+        layout: WindLayout = WindLayout.BARBERFISH,
+        showHeader: Boolean = true,
+    ) {
         val scrollState = ScrollState(0)
         setShotContent(scrollable = true, scrollState = scrollState) {
             var hudConfig by remember {
@@ -323,6 +329,8 @@ class ConfigShotsRenderTest {
                                 field = HUDSlotField.Wind,
                                 colorMode = ZoneColorMode.TEXT,
                                 windShowSpeed = showSpeed,
+                                windLayout = layout,
+                                windShowHeader = showHeader,
                             ),
                         middleSlot =
                             HUDSlotConfig(field = HUDSlotField.HR, colorMode = ZoneColorMode.TEXT),
@@ -356,6 +364,19 @@ class ConfigShotsRenderTest {
     @Test fun windSpeedConfig() = windShot("hud_config_wind_speed", showSpeed = true)
 
     @Test fun windConfig() = windShot("hud_config_wind", showSpeed = false)
+
+    @Test
+    fun windHeadwindConfig() =
+        windShot("hud_config_wind_headwind", showSpeed = true, layout = WindLayout.HEADWIND)
+
+    @Test
+    fun windHeadwindNoHeaderConfig() =
+        windShot(
+            "hud_config_wind_headwind_no_header",
+            showSpeed = true,
+            layout = WindLayout.HEADWIND,
+            showHeader = false,
+        )
 
     @Test
     fun gradeMapConfig() {

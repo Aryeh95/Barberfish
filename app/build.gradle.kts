@@ -43,6 +43,13 @@ android {
     }
 
     buildTypes {
+        // Fork: where the release key is configured, debug builds use it too, so a debug build
+        // (and its screenshot tests) installs over the release build without losing settings.
+        debug {
+            if (localProperties["signing.store.file"] != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
