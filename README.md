@@ -1,8 +1,12 @@
-# Barberfish
+# Barberfish+
 
-[![Release](https://img.shields.io/github/v/release/jpweytjens/barberfish)](https://github.com/jpweytjens/barberfish/releases/latest)
-[![Download](https://img.shields.io/badge/download-barberfish.apk-2ea44f?logo=android&logoColor=white)](https://github.com/jpweytjens/barberfish/releases/latest/download/barberfish.apk)
-[![Downloads](https://img.shields.io/github/downloads/jpweytjens/barberfish/barberfish.apk)](https://github.com/jpweytjens/barberfish/releases)
+A personal fork of [Barberfish](https://github.com/jpweytjens/Barberfish) with its own package
+(`io.github.aryeh95.barberfish`), update channel and additions. See
+[docs/custom-build.md](docs/custom-build.md) for what differs. Everything else below is upstream's.
+
+[![Release](https://img.shields.io/github/v/release/Aryeh95/barberfish)](https://github.com/Aryeh95/barberfish/releases/latest)
+[![Download](https://img.shields.io/badge/download-barberfish.apk-2ea44f?logo=android&logoColor=white)](https://github.com/Aryeh95/barberfish/releases/latest/download/barberfish.apk)
+[![Downloads](https://img.shields.io/github/downloads/Aryeh95/barberfish/barberfish.apk)](https://github.com/Aryeh95/barberfish/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 
 <img src="app/src/main/res/drawable/ic_extension.png" align="left" width="120" alt="Barberfish">
@@ -60,7 +64,7 @@ Theme, units, and zones follow your Karoo automatically; Karoo's Data Field Desi
 
 ## Installation
 
-1. On your phone, download the latest [barberfish.apk](https://github.com/jpweytjens/barberfish/releases/latest/download/barberfish.apk).
+1. On your phone, download the latest [barberfish.apk](https://github.com/Aryeh95/barberfish/releases/latest/download/barberfish.apk).
 2. Sideload it:
    * Karoo 3: share the downloaded APK to the Hammerhead companion app, following [Hammerhead's sideloading instructions](https://support.hammerhead.io/hc/en-us/articles/31576497036827-Karoo-Extension-Sideloading).
    * Karoo 2: install from a computer following [DC Rainmaker's instructions](https://www.dcrainmaker.com/2021/02/how-to-sideload-android-apps-on-your-hammerhead-karoo-1-karoo-2.html).

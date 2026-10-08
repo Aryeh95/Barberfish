@@ -3,8 +3,13 @@ name: Release on Version Change
 on:
   push:
     branches:
-      - master
+      - custom
   workflow_dispatch:
+
+# Fork: create releases with the workflow token.
+permissions:
+  contents: write
+  packages: read
 
 concurrency:
   group: "release"
@@ -102,6 +107,7 @@ jobs:
         with:
           tag_name: ${{ needs.check.outputs.VERSION }}
           name: ${{ needs.check.outputs.VERSION }}
+          target_commitish: ${{ github.sha }}
           body: ${{ steps.release_notes.outputs.NOTES }}
           files: |
             app/build/outputs/apk/release/barberfish.apk

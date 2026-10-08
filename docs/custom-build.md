@@ -1,13 +1,29 @@
 # Custom build
 
 This branch (`custom`) is Barberfish 4.0 with the developer's unreleased wind work
-(`worktree-wind-sock`) merged in, plus one addition: **Show speed** on the Wind HUD slot.
+(`worktree-wind-sock`) merged in, plus **Show speed** on the Wind HUD slot. It is released as
+**Barberfish+** under its own package, `io.github.aryeh95.barberfish`.
+
+## Identity and releases
+
+- `app/build.gradle.kts`: `applicationId` is `io.github.aryeh95.barberfish`; the Kotlin namespace
+  stays `com.jpweytjens.barberfish`. The Karoo's update URL (`MANIFEST_URL`) and the generated
+  `manifest.json` point at this fork's releases, labelled Barberfish+.
+- `strings.xml`: `extension_name` is Barberfish+.
+- The extension id stays `barberfish`. Do not install the official Barberfish beside this one.
+- `.github/workflows/tag-and-release.yml` releases from `custom`: bump `versionName` (no `-`) and
+  `versionCode`, add a `## <version>` section to CHANGELOG.md, push. It signs with the
+  `SIGNING_KEYSTORE`, `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS` and `SIGNING_KEY_PASSWORD`
+  repository secrets.
+- README badges and download links point at this fork.
+- `scripts/render_config_shots.sh` and `scripts/render_previews.sh` use the new package.
 
 ## Show speed
 
 Tap a HUD column, pick **Wind**, and turn on **Show speed**. The slot then stacks:
 
-- top row: ride speed, with the slot's own speed smoothing
+- top row: the total wind speed above the arrow column, then the ride speed with the slot's own
+  speed smoothing
 - bottom row: the Wind slot's arrow and headwind number (bare into the wind, minus with it)
 
 It follows the Wind slot's rules: colour stays on the wind number, on the threshold scale
@@ -28,7 +44,8 @@ New files, no conflict surface:
 Small edits to upstream files:
 
 - `extension/Settings.kt`: `HUDSlotConfig.windShowSpeed`, default off
-- `datatype/shared/FieldState.kt`: `speedRow`
+- `datatype/shared/FieldState.kt`: `speedRow`, `windSpeedRow`
+- `datatype/WindField.kt`: `windSpeedRow` on the live and preview states
 - `datatype/BarberfishView.kt`: the first branch of the value bitmap chain, and a
   `@Suppress` on `makeFieldRemoteViews`
 - `datatype/HUDField.kt`: `.withSpeed(...)` on the Wind slot flow, `.withSpeedPreview(...)` on
@@ -47,5 +64,6 @@ in official 4.0: going back to 4.0 resets a HUD that uses one.
    unmerged) into `custom`.
 2. Check that `SPEED_WIND_DIGIT_FILL` still equals `TWO_ROW_DIGIT_FILL` in `BitmapValue.kt`,
    that the Show speed branch is still first in the value bitmap chain, and that
-   `renderWindArrowValueBitmap` keeps its signature.
+   `renderWindArrowValueBitmap` keeps its signature, that `WindField` still sets `windSpeedRow`,
+   and that the identity lines above survived the merge.
 3. Run `./gradlew spotlessApply test detektDebug lintDebug assembleDebug`.

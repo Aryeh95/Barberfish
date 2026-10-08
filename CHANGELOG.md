@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.0.1
+
+Barberfish+, a personal fork of Barberfish 4.0:
+- Its own package and update channel, so the Karoo no longer offers the official Barberfish over it
+- The Wind field, HUD slot and map windsock from the upcoming wind work, which need the Headwind extension
+- Show speed on the Wind HUD slot: ride speed above the arrow and headwind number, with the total wind speed above the arrow
+
 ## 4.0
 
 Grade map (beta, feedback welcome):

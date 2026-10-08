@@ -11,7 +11,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-devicedir=/sdcard/Android/data/com.jpweytjens.barberfish/files/config_shots
+devicedir=/sdcard/Android/data/io.github.aryeh95.barberfish/files/config_shots
 outdir=${OUTDIR:-screencaps/shots}
 stage=$(mktemp -d)
 
@@ -22,7 +22,7 @@ adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 adb shell rm -rf "$devicedir"
 adb shell am instrument -w \
     -e class com.jpweytjens.barberfish.ConfigShotsRenderTest \
-    com.jpweytjens.barberfish.test/androidx.test.runner.AndroidJUnitRunner
+    io.github.aryeh95.barberfish.test/androidx.test.runner.AndroidJUnitRunner
 
 adb pull "$devicedir" "$stage/config_shots"
 mkdir -p "$outdir"

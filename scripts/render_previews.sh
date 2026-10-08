@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-devicedir=/sdcard/Android/data/com.jpweytjens.barberfish/files/previews
+devicedir=/sdcard/Android/data/io.github.aryeh95.barberfish/files/previews
 outdir=screencaps/previews
 
 ./gradlew assembleDebug assembleDebugAndroidTest
@@ -17,7 +17,7 @@ adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 adb shell rm -rf "$devicedir"
 adb shell am instrument -w \
     -e class com.jpweytjens.barberfish.AllFieldPreviewsRenderTest \
-    com.jpweytjens.barberfish.test/androidx.test.runner.AndroidJUnitRunner
+    io.github.aryeh95.barberfish.test/androidx.test.runner.AndroidJUnitRunner
 
 rm -rf "$outdir"
 adb pull "$devicedir" "$outdir"

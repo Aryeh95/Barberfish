@@ -17,16 +17,17 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.jpweytjens.barberfish"
+        // Fork: its own package, so it installs beside nothing official and updates from the fork.
+        applicationId = "io.github.aryeh95.barberfish"
         minSdk = 26
         targetSdk = 34
-        versionCode = 14
-        versionName = "4.0"
+        versionCode = 15
+        versionName = "4.0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Update channel: the Karoo polls this manifest for new versions.
         // Beta builds override it via MANIFEST_URL to point at the betafish repo.
         manifestPlaceholders["manifestUrl"] = System.getenv("MANIFEST_URL")
-            ?: "https://github.com/jpweytjens/barberfish/releases/latest/download/manifest.json"
+            ?: "https://github.com/Aryeh95/barberfish/releases/latest/download/manifest.json"
     }
 
     signingConfigs {
@@ -95,16 +96,16 @@ tasks.register("generateManifest") {
     group = "build"
 
     doLast {
-        val baseUrl = System.getenv("BASE_URL") ?: "https://github.com/jpweytjens/barberfish/releases/latest/download"
+        val baseUrl = System.getenv("BASE_URL") ?: "https://github.com/Aryeh95/barberfish/releases/latest/download"
         val manifestFile = file("$projectDir/manifest.json")
         val manifest = mapOf(
-            "label" to "Barberfish",
-            "packageName" to "com.jpweytjens.barberfish",
+            "label" to "Barberfish+",
+            "packageName" to android.defaultConfig.applicationId,
             "iconUrl" to "$baseUrl/ic_extension.png",
             "latestApkUrl" to "$baseUrl/barberfish.apk",
             "latestVersion" to android.defaultConfig.versionName,
             "latestVersionCode" to android.defaultConfig.versionCode,
-            "developer" to "github.com/jpweytjens",
+            "developer" to "github.com/Aryeh95",
             "description" to "Barberfish keeps Hammerheads sharp, on your handlebars and in the ocean. Native-feeling data field enhancements for the Hammerhead Karoo.",
             "releaseNotes" to (System.getenv("RELEASE_NOTES") ?: ""),
             "tags" to listOf("performance")
