@@ -1,0 +1,14 @@
+<!-- Material Symbols "arrow_upward" for the Headwind-style Wind slot. Source viewBox is
+     "0 -960 960 960" (negative Y); the group shifts the path down by 960. Points up for a pure
+     tailwind and is rotated at render time by the relative wind angle. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="38dp"
+    android:height="38dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <group android:translateY="960">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M440-160v-487L216-423l-56-57 320-320 320 320-56 57-224-224v487h-80Z" />
+    </group>
+</vector>

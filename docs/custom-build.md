@@ -32,6 +32,18 @@ header reads SPEED with the speed and wind icons. When Headwind has no data the 
 plain Speed slot, and the column never drops while speed is valid. While the GPS fix has no
 course the wind reading is held, as the Wind slot does, and speed keeps updating.
 
+### Layout
+
+With Show speed on, **Layout** picks how the slot draws:
+
+- **Barberfish**: the stack above, in the developer's style.
+- **Headwind**: karoo-headwind's Tailwind and ride speed look. A big arrow on the left, the ride
+  speed on top and the summary line below (`+9▼14`: tail or head wind, the trend against the ride
+  average, the total wind speed), all in wind colors from green with a tailwind to red into a
+  headwind. **Header** off hides the header row, gives the digits its height and keeps the wind
+  icon at the top of the arrow column. Without wind data the slot keeps this look with the speed
+  alone.
+
 ## What differs from upstream
 
 New files, no conflict surface:
@@ -39,15 +51,19 @@ New files, no conflict surface:
 - `app/src/main/kotlin/.../datatype/SpeedWindSlot.kt`: combining speed and wind states
 - `app/src/main/kotlin/.../datatype/shared/SpeedWindBitmap.kt`: the two-row renderer
 - `app/src/main/kotlin/.../screens/HUDWindCard.kt`: the Wind slot's controls
+- `app/src/main/kotlin/.../datatype/HeadwindStyleSlot.kt`, `SpeedReading.kt`: the Headwind layout's
+  states
+- `app/src/main/kotlin/.../datatype/shared/HeadwindStyleBitmap.kt`: its renderer
+- `app/src/main/kotlin/.../extension/WindLayout.kt`, `res/drawable/ic_wind_arrow.xml`
 - `app/src/test/kotlin/.../SpeedWindSlotTest.kt`
 
 Small edits to upstream files:
 
-- `extension/Settings.kt`: `HUDSlotConfig.windShowSpeed`, default off
-- `datatype/shared/FieldState.kt`: `speedRow`, `windSpeedRow`
+- `extension/Settings.kt`: `HUDSlotConfig.windShowSpeed` (default off), `windLayout`, `windShowHeader`
+- `datatype/shared/FieldState.kt`: `speedRow`, `windSpeedRow`, `headwindLayout`, `hideHeader`
 - `datatype/WindField.kt`: `windSpeedRow` on the live and preview states
-- `datatype/BarberfishView.kt`: the first branch of the value bitmap chain, and a
-  `@Suppress` on `makeFieldRemoteViews`
+- `datatype/BarberfishView.kt`: the first branch of the value bitmap chain, the value height and
+  header hiding for header-off, and a `@Suppress` on `makeFieldRemoteViews`
 - `datatype/HUDField.kt`: `.withSpeed(...)` on the Wind slot flow, `.withSpeedPreview(...)` on
   its preview
 - `screens/HUDConfigSection.kt`: the Wind slot shows `HUDWindCard`

@@ -20,10 +20,12 @@ import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.WIND_ARROW_GAP_DP
 import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
 import com.jpweytjens.barberfish.datatype.shared.headerHeightPx
+import com.jpweytjens.barberfish.datatype.shared.hideFieldHeader
 import com.jpweytjens.barberfish.datatype.shared.renderHeaderBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderTwoRowValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderWindArrowValueBitmap
+import com.jpweytjens.barberfish.datatype.shared.speedWindBitmapHeightPx
 import com.jpweytjens.barberfish.datatype.shared.speedWindValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.toColorConfig
 import com.jpweytjens.barberfish.datatype.shared.toViewSizeConfig
@@ -203,7 +205,7 @@ private fun makeFieldRemoteViews(
     // locale can introduce is the decimal separator — safe to normalize to a dot here, the
     // single point every field value (standalone, HUD slot, preview) flows through.
     val valueText = field.primary.replace(',', '.')
-    val bitmapHeightPx = (sizeConfig.valueBitmapHeightDp * density).toInt()
+    val bitmapHeightPx = speedWindBitmapHeightPx(field, sizeConfig, density)
     // The wind arrow takes a square box of the value's height on the left; the number gets the
     // rest and shrinks only if that is not enough.
     val valueWidthPx =
@@ -250,11 +252,11 @@ private fun makeFieldRemoteViews(
             cellWidthPx,
         )
 
+    if (field.hideHeader) hideFieldHeader(rv)
     val valueBitmap =
-        if (field.speedRow != null) {
+        if (field.speedRow != null || field.headwindLayout) {
             // Wind slot with Show speed (custom build): speed over the wind.
             speedWindValueBitmap(
-                field.speedRow,
                 field,
                 valueText,
                 bitmapHeightPx,

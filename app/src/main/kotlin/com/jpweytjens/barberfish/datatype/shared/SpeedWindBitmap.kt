@@ -6,8 +6,11 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.Typeface
+import android.view.View
+import android.widget.RemoteViews
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.createBitmap
+import com.jpweytjens.barberfish.R
 import io.hammerhead.karooext.models.ViewConfig
 
 /** Gap between the two rows, as in [renderTwoRowValueBitmap]. */
@@ -139,13 +142,12 @@ fun renderSpeedWindValueBitmap(
 }
 
 /**
- * The value bitmap for a Wind slot with Show speed, [speedRow] being the field's speed text. Speed
- * and arrow take the header colour, the wind number the value colour: in Fill mode both are the
- * on-fill pick.
+ * The value bitmap for a Wind slot with Show speed. Barberfish layout: speed and arrow take the
+ * header colour, the wind number the value colour; in Fill mode both are the on-fill pick. Headwind
+ * layout: everything in the value colour, the corner icon (header off) in the icon tint.
  */
 @Suppress("LongParameterList")
 internal fun speedWindValueBitmap(
-    speedRow: String,
     field: FieldState,
     valueText: String,
     bitmapHeightPx: Int,
@@ -154,19 +156,33 @@ internal fun speedWindValueBitmap(
     alignment: ViewConfig.Alignment,
     context: Context,
 ): Bitmap =
-    renderSpeedWindValueBitmap(
-        speedText = speedRow.replace(',', '.'),
-        windText = valueText,
-        angleDeg = field.windArrowDeg,
-        bitmapHeightPx = bitmapHeightPx,
-        cellWidthPx = cellWidthPx,
-        speedColor = colors.headerText.toArgb(),
-        windColor = colors.valueText.toArgb(),
-        arrowColor = colors.headerText.toArgb(),
-        alignment = alignment,
-        context = context,
-        windSpeedText = field.windSpeedRow,
-    )
+    if (field.headwindLayout)
+        renderHeadwindStyleBitmap(
+            speed = valueText,
+            summary = field.secondary.orEmpty(),
+            angleDeg = field.windArrowDeg,
+            bitmapHeightPx = bitmapHeightPx,
+            cellWidthPx = cellWidthPx,
+            color = colors.valueText.toArgb(),
+            iconTint = colors.iconTint.toArgb(),
+            iconRes = if (field.hideHeader) field.secondaryIconRes else null,
+            alignment = alignment,
+            context = context,
+        )
+    else
+        renderSpeedWindValueBitmap(
+            speedText = field.speedRow.orEmpty().replace(',', '.'),
+            windText = valueText,
+            angleDeg = field.windArrowDeg,
+            bitmapHeightPx = bitmapHeightPx,
+            cellWidthPx = cellWidthPx,
+            speedColor = colors.headerText.toArgb(),
+            windColor = colors.valueText.toArgb(),
+            arrowColor = colors.headerText.toArgb(),
+            alignment = alignment,
+            context = context,
+            windSpeedText = field.windSpeedRow,
+        )
 
 /** The total wind speed centred in the arrow column of the top row, in the header colour. */
 private fun Canvas.drawWindSpeed(text: String, geo: SpeedWindGeometry, fontPx: Float, color: Int) {
@@ -183,4 +199,23 @@ private fun Canvas.drawWindSpeed(text: String, geo: SpeedWindGeometry, fontPx: F
     val bounds = Rect()
     paint.getTextBounds(text, 0, text.length, bounds)
     drawText(text, geo.boxPx / 2f, geo.bandPx / 2f - (bounds.top + bounds.bottom) / 2f, paint)
+}
+
+/**
+ * Value height for [field]: the layout's usual value height, plus the header's height when the
+ * field draws without its header, so the digits take the whole slot.
+ */
+internal fun speedWindBitmapHeightPx(
+    field: FieldState,
+    sizeConfig: ViewSizeConfig,
+    density: Float,
+): Int {
+    val value = (sizeConfig.valueBitmapHeightDp * density).toInt()
+    return if (field.hideHeader) value + (sizeConfig.headerMinHeightDp * density).toInt() else value
+}
+
+/** Hides the header row and its height probe, so the value box starts at the cell top. */
+internal fun hideFieldHeader(rv: RemoteViews) {
+    rv.setViewVisibility(R.id.field_header, View.GONE)
+    rv.setViewVisibility(R.id.header_ref, View.GONE)
 }

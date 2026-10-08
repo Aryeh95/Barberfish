@@ -30,6 +30,10 @@ data class FieldState(
     // The Wind slot's total wind speed, drawn above the arrow when Show speed is on. Null
     // otherwise.
     val windSpeedRow: String? = null,
+    // Wind slot with Show speed in the Headwind layout: big arrow, speed and summary line.
+    val headwindLayout: Boolean = false,
+    // Draw without the header row, the value taking its height, with the icon in the corner.
+    val hideHeader: Boolean = false,
 ) {
     companion object {
         fun searching(label: String = "", iconRes: Int? = null) =

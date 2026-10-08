@@ -1,17 +1,27 @@
 package com.jpweytjens.barberfish
 
 import com.jpweytjens.barberfish.datatype.SpeedField
+import com.jpweytjens.barberfish.datatype.SpeedReading
 import com.jpweytjens.barberfish.datatype.WindField
+import com.jpweytjens.barberfish.datatype.headwindStyleFactor
+import com.jpweytjens.barberfish.datatype.headwindStyleState
+import com.jpweytjens.barberfish.datatype.headwindSummary
+import com.jpweytjens.barberfish.datatype.headwindTrend
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.HEADWIND_SPEED_PROBE
+import com.jpweytjens.barberfish.datatype.shared.HEADWIND_SUMMARY_PROBE
 import com.jpweytjens.barberfish.datatype.shared.HUDState
 import com.jpweytjens.barberfish.datatype.shared.SPEED_WIND_ROW_GAP_PX
 import com.jpweytjens.barberfish.datatype.shared.SlotState
 import com.jpweytjens.barberfish.datatype.shared.WindArrowGeometry
+import com.jpweytjens.barberfish.datatype.shared.fitText
+import com.jpweytjens.barberfish.datatype.shared.headwindStyleGeometry
 import com.jpweytjens.barberfish.datatype.shared.speedWindGeometry
 import com.jpweytjens.barberfish.datatype.shared.visibleColumns
 import com.jpweytjens.barberfish.datatype.shared.windSpeedFontPx
 import com.jpweytjens.barberfish.datatype.speedWindState
+import com.jpweytjens.barberfish.datatype.withHeadwindStates
 import com.jpweytjens.barberfish.datatype.withSpeedPreview
 import com.jpweytjens.barberfish.datatype.withSpeedStates
 import com.jpweytjens.barberfish.extension.HUDConfig
@@ -19,6 +29,7 @@ import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.WindFieldConfig
+import com.jpweytjens.barberfish.extension.WindLayout
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.DataPoint
 import io.hammerhead.karooext.models.DataType
@@ -228,5 +239,183 @@ class SpeedWindSlotTest {
         assertEquals(33f, windSpeedFontPx(33f, probeWidthPx = 20f, boxPx = 28), 1e-6f)
         assertEquals(33f * 28f / 40f, windSpeedFontPx(33f, probeWidthPx = 40f, boxPx = 28), 1e-4f)
         assertTrue(windSpeedFontPx(33f, probeWidthPx = 100f, boxPx = 28) < 33f)
+    }
+
+    private val headwindSlot =
+        HUDSlotConfig(
+            field = HUDSlotField.Wind,
+            windShowSpeed = true,
+            windLayout = WindLayout.HEADWIND,
+        )
+
+    @Test
+    fun headwind_summary_matches_headwind() {
+        assertEquals("+9▼9", headwindSummary(-9, "▼", "9"))
+        assertEquals("-6▲12", headwindSummary(6, "▲", "12"))
+        assertEquals("0≈5", headwindSummary(0, "≈", "5"))
+    }
+
+    @Test
+    fun headwind_trend_against_the_average() {
+        assertEquals("▲", headwindTrend(9.0, 8.0))
+        assertEquals("▼", headwindTrend(7.0, 8.0))
+        assertEquals("≈", headwindTrend(8.0, 8.01))
+        assertEquals(" ", headwindTrend(8.0, null))
+    }
+
+    @Test
+    fun headwind_colour_ramp() {
+        assertEquals(0f, headwindStyleFactor(0.0), 1e-6f)
+        assertEquals(-1f, headwindStyleFactor(15.0), 1e-6f)
+        assertEquals(1f, headwindStyleFactor(-10.0), 1e-6f)
+        assertEquals(0.5f, headwindStyleFactor(-5.0), 1e-6f)
+    }
+
+    @Test
+    fun headwind_layout_state_when_both_live() {
+        val w = wind(180.0, 10.0, 14.0)
+        val s =
+            headwindStyleState(
+                speed(14.0),
+                14.0 / 3.6,
+                16.0 / 3.6,
+                w,
+                ZoneColorMode.TEXT,
+                true,
+                metric,
+            )
+        assertEquals("14.0", s.primary)
+        assertEquals("-10▼14", s.secondary)
+        assertTrue(s.headwindLayout)
+        assertFalse(s.hideHeader)
+        assertEquals(180f, s.windArrowDeg!!, 1e-6f)
+        assertTrue((s.color as FieldColor.Threshold).factor < 0f)
+        assertNull(s.speedRow)
+    }
+
+    @Test
+    fun headwind_layout_header_off_and_no_color() {
+        val s =
+            headwindStyleState(
+                speed(20.0),
+                null,
+                null,
+                wind(0.0, -6.0, 6.0),
+                ZoneColorMode.NONE,
+                false,
+                metric,
+            )
+        assertTrue(s.hideHeader)
+        assertEquals(FieldColor.Default, s.color)
+        assertEquals("+6 6", s.secondary)
+    }
+
+    @Test
+    fun headwind_layout_without_wind_keeps_its_look_and_header_choice() {
+        val s =
+            headwindStyleState(
+                speed(25.0),
+                7.0,
+                7.0,
+                WindField.noWindData(),
+                ZoneColorMode.TEXT,
+                false,
+                metric,
+            )
+        assertEquals("25.0", s.primary)
+        assertEquals("", s.secondary)
+        assertTrue(s.headwindLayout)
+        assertTrue(s.hideHeader)
+        assertNull(s.windArrowDeg)
+        assertEquals(FieldColor.Default, s.color)
+        assertFalse(s.noSensor)
+    }
+
+    @Test
+    fun headwind_layout_without_speed_shows_the_wind_with_the_header_choice() {
+        val w = wind(225.0, 12.4, 15.0)
+        val s =
+            headwindStyleState(
+                FieldState.searching("Speed"),
+                null,
+                null,
+                w,
+                ZoneColorMode.TEXT,
+                false,
+                metric,
+            )
+        assertEquals(w.copy(hideHeader = true), s)
+    }
+
+    @Test
+    fun headwind_layout_with_neither_shows_the_speed_text() {
+        val s =
+            headwindStyleState(
+                FieldState.searching("Speed"),
+                null,
+                null,
+                WindField.noWindData(),
+                ZoneColorMode.TEXT,
+                false,
+                metric,
+            )
+        assertEquals("Searching…", s.primary)
+        assertFalse(s.hideHeader)
+    }
+
+    @Test
+    fun fit_text_uses_the_wider_of_text_and_probe() {
+        assertEquals(HEADWIND_SPEED_PROBE, fitText("9.8", HEADWIND_SPEED_PROBE))
+        assertEquals("100.5", fitText("100.5", HEADWIND_SPEED_PROBE))
+        assertEquals(HEADWIND_SUMMARY_PROBE, fitText("+9▼9", HEADWIND_SUMMARY_PROBE))
+    }
+
+    @Test
+    fun headwind_layout_preview_frames() {
+        val frames = WindField.previewStates(cfg).withSpeedPreview(headwindSlot, metric)
+        assertEquals(5, frames.size)
+        assertTrue(frames.all { it.headwindLayout && it.secondary != null })
+    }
+
+    @Test
+    fun headwind_live_flow_shows_speed_before_headwind() = runBlocking {
+        val sp = speed(25.0)
+        val first =
+            emptyFlow<FieldState>()
+                .withHeadwindStates(
+                    flowOf(SpeedReading(sp, 7.0)),
+                    emptyFlow(),
+                    headwindSlot,
+                    metric,
+                )
+                .first()
+        assertEquals("25.0", first.primary)
+        assertTrue(first.headwindLayout)
+        assertEquals("", first.secondary)
+    }
+
+    @Test
+    fun headwind_geometry_with_and_without_the_icon() {
+        val plain = headwindStyleGeometry(108, 0f)
+        assertEquals(108f, plain.arrowPx, 1e-4f)
+        assertEquals(0f, plain.arrowTopPx, 1e-6f)
+        val icon = headwindStyleGeometry(108, 24f)
+        assertTrue(icon.arrowTopPx > 24f)
+        assertEquals(108f, icon.arrowTopPx + icon.arrowPx, 1e-4f)
+        assertEquals(108f, icon.speedBandPx + icon.summaryBandPx, 1e-4f)
+    }
+
+    @Test
+    fun layout_settings_round_trip_and_default() {
+        val stored =
+            json.encodeToString(HUDConfig(leftSlot = headwindSlot.copy(windShowHeader = false)))
+        val back = json.decodeFromString<HUDConfig>(stored).leftSlot
+        assertEquals(WindLayout.HEADWIND, back.windLayout)
+        assertFalse(back.windShowHeader)
+        val old =
+            json.decodeFromString<HUDConfig>(
+                json.encodeToString(HUDConfig()).replace(",\"windLayout\":\"BARBERFISH\"", "")
+            )
+        assertEquals(WindLayout.BARBERFISH, old.leftSlot.windLayout)
     }
 }

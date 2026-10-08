@@ -4,8 +4,11 @@ import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
+import com.jpweytjens.barberfish.extension.WindLayout
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import io.hammerhead.karooext.KarooSystemService
+import io.hammerhead.karooext.models.DataType
+import io.hammerhead.karooext.models.StreamState
 import io.hammerhead.karooext.models.UserProfile
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -50,13 +53,32 @@ internal fun Flow<FieldState>.withSpeed(
     karooSystem: KarooSystemService,
     profile: UserProfile,
 ): Flow<FieldState> =
-    if (!slot.windShowSpeed) this
-    else
-        withSpeedStates(
-            karooSystem.streamDataFlow(slot.speedSmoothing.typeId).map {
-                SpeedField.toFieldState(it, profile, slot.speedSmoothing)
-            }
-        )
+    when {
+        !slot.windShowSpeed -> this
+        slot.windLayout == WindLayout.HEADWIND ->
+            withHeadwindStates(
+                karooSystem.streamDataFlow(slot.speedSmoothing.typeId).map {
+                    SpeedReading(
+                        SpeedField.toFieldState(it, profile, slot.speedSmoothing),
+                        (it as? StreamState.Streaming)
+                            ?.dataPoint
+                            ?.values
+                            ?.get(slot.speedSmoothing.fieldId),
+                    )
+                },
+                karooSystem.streamDataFlow(DataType.Type.AVERAGE_SPEED).map {
+                    (it as? StreamState.Streaming)?.dataPoint?.values?.values?.firstOrNull()
+                },
+                slot,
+                profile,
+            )
+        else ->
+            withSpeedStates(
+                karooSystem.streamDataFlow(slot.speedSmoothing.typeId).map {
+                    SpeedField.toFieldState(it, profile, slot.speedSmoothing)
+                }
+            )
+    }
 
 /** [speed] combined with these wind states, the wind side seeded so speed shows at once. */
 internal fun Flow<FieldState>.withSpeedStates(speed: Flow<FieldState>): Flow<FieldState> =
@@ -68,6 +90,8 @@ internal fun List<FieldState>.withSpeedPreview(
     profile: UserProfile,
 ): List<FieldState> =
     if (!slot.windShowSpeed) this
-    else
-        SpeedField.previewStates(SpeedFieldConfig(slot.speedSmoothing), profile)
-            .zip(this, ::speedWindState)
+    else {
+        val speeds = SpeedField.previewStates(SpeedFieldConfig(slot.speedSmoothing), profile)
+        if (slot.windLayout == WindLayout.HEADWIND) headwindPreview(speeds, this, slot, profile)
+        else speeds.zip(this, ::speedWindState)
+    }

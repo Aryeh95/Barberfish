@@ -135,6 +135,9 @@ data class HUDSlotConfig(
     val gradeShowPercentSign: Boolean = true,
     // Wind slot only: ride speed stacked above the wind (custom build).
     val windShowSpeed: Boolean = false,
+    // Wind slot with Show speed: Barberfish's stacked layout or Headwind's, and its header.
+    val windLayout: WindLayout = WindLayout.BARBERFISH,
+    val windShowHeader: Boolean = true,
 )
 
 @Serializable
