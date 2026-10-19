@@ -37,6 +37,14 @@
     <string name="time_to_civil_dusk_description">Time until civil dusk at current location</string>
     <string name="cadence_name">Cadence</string>
     <string name="cadence_description">Current cadence with optional smoothing</string>
+    <string name="avg_cadence_name">Avg Cadence</string>
+    <string name="avg_cadence_description">Average cadence with optional threshold coloring</string>
+    <string name="lap_avg_cadence_name">Lap Cadence</string>
+    <string name="lap_avg_cadence_description">Average cadence this lap with optional threshold coloring</string>
+    <string name="last_lap_avg_cadence_name">Last Lap Cadence</string>
+    <string name="last_lap_avg_cadence_description">Average cadence from the previous lap with optional threshold coloring</string>
+    <string name="max_cadence_name">Max Cadence</string>
+    <string name="max_cadence_description">Maximum cadence reached this ride, with optional threshold coloring</string>
     <string name="wind_name">Wind</string>
     <string name="wind_description">Headwind speed and direction, from the Headwind extension</string>
     <string name="avg_power_name">Avg Power</string>

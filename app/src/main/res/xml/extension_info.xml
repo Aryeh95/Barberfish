@@ -123,6 +123,30 @@
         description="@string/cadence_description"
         graphical="true" />
     <DataType
+        icon="@drawable/ic_avg_cadence"
+        typeId="avg-cadence"
+        displayName="@string/avg_cadence_name"
+        description="@string/avg_cadence_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_lap_cadence"
+        typeId="lap-avg-cadence"
+        displayName="@string/lap_avg_cadence_name"
+        description="@string/lap_avg_cadence_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_last_lap_cadence"
+        typeId="last-lap-avg-cadence"
+        displayName="@string/last_lap_avg_cadence_name"
+        description="@string/last_lap_avg_cadence_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_cadence"
+        typeId="max-cadence"
+        displayName="@string/max_cadence_name"
+        description="@string/max_cadence_description"
+        graphical="true" />
+    <DataType
         icon="@drawable/ic_air"
         typeId="wind"
         displayName="@string/wind_name"

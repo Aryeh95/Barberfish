@@ -97,6 +97,8 @@ import com.jpweytjens.barberfish.datatype.AvgHRField
 import com.jpweytjens.barberfish.datatype.AvgPowerField
 import com.jpweytjens.barberfish.datatype.AvgSpeedField
 import com.jpweytjens.barberfish.datatype.CadenceField
+import com.jpweytjens.barberfish.datatype.CadenceStatField
+import com.jpweytjens.barberfish.datatype.CadenceStatKind
 import com.jpweytjens.barberfish.datatype.EffortField
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HRField
@@ -143,6 +145,7 @@ import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
+import com.jpweytjens.barberfish.extension.CadenceStatFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
 import com.jpweytjens.barberfish.extension.ChevronEmphasis
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
@@ -183,6 +186,7 @@ import com.jpweytjens.barberfish.extension.ZoneDisplayMode
 import com.jpweytjens.barberfish.extension.saveAvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.saveAvgSpeedConfig
 import com.jpweytjens.barberfish.extension.saveCadenceFieldConfig
+import com.jpweytjens.barberfish.extension.saveCadenceStatFieldConfig
 import com.jpweytjens.barberfish.extension.saveDataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.saveETAConfig
 import com.jpweytjens.barberfish.extension.saveEffortFieldConfig
@@ -215,6 +219,23 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private val STACK_ORDER_OPTIONS = listOf(false to "Distance", true to "Climb")
+
+private fun CadenceStatKind.cardTitle(): String =
+    when (this) {
+        CadenceStatKind.AVG -> "AVG CADENCE"
+        CadenceStatKind.LAP_AVG -> "LAP AVG CADENCE"
+        CadenceStatKind.LAST_LAP_AVG -> "LAST LAP AVG CADENCE"
+        CadenceStatKind.MAX -> "MAX CADENCE"
+    }
+
+private fun CadenceStatKind.cardDescription(): String =
+    when (this) {
+        CadenceStatKind.AVG -> "Average cadence with threshold coloring."
+        CadenceStatKind.LAP_AVG -> "Average cadence this lap with threshold coloring."
+        CadenceStatKind.LAST_LAP_AVG ->
+            "Average cadence from the previous lap with threshold coloring."
+        CadenceStatKind.MAX -> "Maximum cadence reached this ride, with threshold coloring."
+    }
 
 class MainActivity : ComponentActivity() {
 
@@ -281,6 +302,9 @@ class MainActivity : ComponentActivity() {
         var hrZoneFieldConfig by remember { mutableStateOf(HRZoneFieldConfig()) }
         var speedFieldConfig by remember { mutableStateOf(SpeedFieldConfig()) }
         var cadenceFieldConfig by remember { mutableStateOf(CadenceFieldConfig()) }
+        var cadenceStatConfigs by remember {
+            mutableStateOf(CadenceStatKind.entries.associateWith { CadenceStatFieldConfig() })
+        }
         var windFieldConfig by remember { mutableStateOf(WindFieldConfig()) }
         var windSockConfig by remember { mutableStateOf(WindSockConfig()) }
         var avgPowerFieldConfig by remember { mutableStateOf(AvgPowerFieldConfig()) }
@@ -343,6 +367,7 @@ class MainActivity : ComponentActivity() {
                     hrZoneFieldConfig = snapshot.hrZoneField
                     speedFieldConfig = snapshot.speedField
                     cadenceFieldConfig = snapshot.cadenceField
+                    cadenceStatConfigs = snapshot.cadenceStatFields
                     windFieldConfig = snapshot.windField
                     windSockConfig = snapshot.windSock
                     avgPowerFieldConfig = snapshot.avgPowerField
@@ -1070,6 +1095,41 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                             )
+                        }
+
+                        // Avg, lap avg, last lap avg and max cadence: the Cadence card's coloring,
+                        // without smoothing.
+                        CadenceStatKind.entries.forEach { kind ->
+                            val cfg = cadenceStatConfigs.getValue(kind)
+                            val title = kind.cardTitle()
+                            fun save(updated: CadenceStatFieldConfig) {
+                                cadenceStatConfigs = cadenceStatConfigs + (kind to updated)
+                                lifecycleScope.launch { saveCadenceStatFieldConfig(kind, updated) }
+                            }
+                            FieldCard(
+                                title = title,
+                                typeId = kind.typeId,
+                                description = kind.cardDescription(),
+                                previewFields =
+                                    remember(kind, cfg) {
+                                        CadenceStatField.previewStates(kind, cfg)
+                                    },
+                                colorMode = cfg.colorMode,
+                                selected = selectedDataField == title,
+                                onSelect = {
+                                    selectedDataField =
+                                        if (selectedDataField == title) null else title
+                                },
+                            ) {
+                                ZoneColorSlider(
+                                    selected = cfg.colorMode,
+                                    onSelected = { mode -> save(cfg.copy(colorMode = mode)) },
+                                )
+                                CadenceThresholdControls(
+                                    config = cfg.threshold,
+                                    onConfigChange = { save(cfg.copy(threshold = it)) },
+                                )
+                            }
                         }
 
                         ControlLabel("WIND", modifier = Modifier.padding(top = 8.dp))

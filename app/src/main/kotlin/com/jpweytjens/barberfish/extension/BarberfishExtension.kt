@@ -9,6 +9,8 @@ import com.jpweytjens.barberfish.datatype.AvgPowerField
 import com.jpweytjens.barberfish.datatype.AvgSpeedField
 import com.jpweytjens.barberfish.datatype.BarberfishBase
 import com.jpweytjens.barberfish.datatype.CadenceField
+import com.jpweytjens.barberfish.datatype.CadenceStatField
+import com.jpweytjens.barberfish.datatype.CadenceStatKind
 import com.jpweytjens.barberfish.datatype.ETAField
 import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.EffortField
@@ -143,6 +145,10 @@ fun barberfishDataTypes(karooSystem: KarooSystemService): List<BarberfishBase<*>
         AvgSpeedField(karooSystem, includePaused = false),
         // Other
         CadenceField(karooSystem),
+        CadenceStatField(karooSystem, CadenceStatKind.AVG),
+        CadenceStatField(karooSystem, CadenceStatKind.LAP_AVG),
+        CadenceStatField(karooSystem, CadenceStatKind.LAST_LAP_AVG),
+        CadenceStatField(karooSystem, CadenceStatKind.MAX),
         WindField(karooSystem),
         GradeField(karooSystem),
         ElevationSparklineField(karooSystem),

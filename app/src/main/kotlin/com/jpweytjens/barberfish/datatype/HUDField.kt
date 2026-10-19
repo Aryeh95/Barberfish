@@ -16,6 +16,7 @@ import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.sparklineBitmapFlow
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
+import com.jpweytjens.barberfish.extension.CadenceStatFieldConfig
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
 import com.jpweytjens.barberfish.extension.HRFieldConfig
 import com.jpweytjens.barberfish.extension.HRMaxPercentFieldConfig
@@ -270,6 +271,16 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 karooSystem.streamDataFlow(slot.cadenceSmoothing.typeId).map {
                     CadenceField.toFieldState(it, slot.cadenceSmoothing, slot.cadenceThreshold)
                 }
+            HUDSlotField.AvgCadence,
+            HUDSlotField.LapAvgCadence,
+            HUDSlotField.LastLapAvgCadence,
+            HUDSlotField.MaxCadence ->
+                CadenceStatField.liveStates(
+                    karooSystem,
+                    checkNotNull(slot.field.cadenceStatKind),
+                    slot.cadenceThreshold,
+                    slot.colorMode,
+                )
             HUDSlotField.AvgPower ->
                 karooSystem.streamDataFlow(DataType.Type.AVERAGE_POWER).map {
                     AvgPowerField.toFieldState(it, profile, zones, slot.colorMode)
@@ -480,6 +491,14 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     HUDSlotField.Cadence ->
                         CadenceField.previewStates(
                             CadenceFieldConfig(slotCfg.cadenceSmoothing, slotCfg.cadenceThreshold)
+                        )
+                    HUDSlotField.AvgCadence,
+                    HUDSlotField.LapAvgCadence,
+                    HUDSlotField.LastLapAvgCadence,
+                    HUDSlotField.MaxCadence ->
+                        CadenceStatField.previewStates(
+                            checkNotNull(field.cadenceStatKind),
+                            CadenceStatFieldConfig(slotCfg.cadenceThreshold, slotCfg.colorMode),
                         )
                     is HUDSlotField.AvgSpeed ->
                         AvgSpeedField.previewStates(

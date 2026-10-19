@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.jpweytjens.barberfish.datatype.CadenceStatKind
 import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
@@ -77,6 +78,14 @@ sealed interface HUDSlotField {
     @Serializable data object Power : HUDSlotField
 
     @Serializable data object Cadence : HUDSlotField
+
+    @Serializable data object AvgCadence : HUDSlotField
+
+    @Serializable data object LapAvgCadence : HUDSlotField
+
+    @Serializable data object LastLapAvgCadence : HUDSlotField
+
+    @Serializable data object MaxCadence : HUDSlotField
 
     @Serializable data object AvgPower : HUDSlotField
 
@@ -620,6 +629,28 @@ fun Context.streamCadenceFieldConfig(): Flow<CadenceFieldConfig> =
 suspend fun Context.saveCadenceFieldConfig(config: CadenceFieldConfig) =
     saveConfig(cadenceFieldConfigKey, config)
 
+// --- CadenceStatFieldConfig ---
+// Avg, lap avg, last lap avg and max cadence: one config per field, each under its own key
+// (CadenceStatKind.configKey). Cadence has no Karoo zones, so these carry the Cadence field's
+// threshold coloring.
+
+@Serializable
+data class CadenceStatFieldConfig(
+    val threshold: CadenceThresholdConfig = CadenceThresholdConfig(),
+    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
+)
+
+private val CadenceStatKind.preferencesKey: Preferences.Key<String>
+    get() = stringPreferencesKey(configKey)
+
+fun Context.streamCadenceStatFieldConfig(kind: CadenceStatKind): Flow<CadenceStatFieldConfig> =
+    streamConfig(kind.preferencesKey, CadenceStatFieldConfig())
+
+suspend fun Context.saveCadenceStatFieldConfig(
+    kind: CadenceStatKind,
+    config: CadenceStatFieldConfig,
+) = saveConfig(kind.preferencesKey, config)
+
 // --- AvgPowerFieldConfig ---
 
 @Serializable data class AvgPowerFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
@@ -857,6 +888,7 @@ data class ConfigSnapshot(
     val hrZoneField: HRZoneFieldConfig,
     val speedField: SpeedFieldConfig,
     val cadenceField: CadenceFieldConfig,
+    val cadenceStatFields: Map<CadenceStatKind, CadenceStatFieldConfig>,
     val avgPowerField: AvgPowerFieldConfig,
     val npField: NPFieldConfig,
     val lapPowerField: LapPowerFieldConfig,
@@ -895,6 +927,10 @@ fun Context.streamConfigSnapshot(): Flow<ConfigSnapshot> =
                 hrZoneField = prefs.config(hrZoneFieldConfigKey, HRZoneFieldConfig()),
                 speedField = prefs.config(speedFieldConfigKey, SpeedFieldConfig()),
                 cadenceField = prefs.config(cadenceFieldConfigKey, CadenceFieldConfig()),
+                cadenceStatFields =
+                    CadenceStatKind.entries.associateWith {
+                        prefs.config(it.preferencesKey, CadenceStatFieldConfig())
+                    },
                 avgPowerField = prefs.config(avgPowerFieldConfigKey, AvgPowerFieldConfig()),
                 npField = prefs.config(npFieldConfigKey, NPFieldConfig()),
                 lapPowerField = prefs.config(lapPowerFieldConfigKey, LapPowerFieldConfig()),
