@@ -7,11 +7,13 @@ import android.graphics.Color
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.jpweytjens.barberfish.datatype.BarberfishBase
+import com.jpweytjens.barberfish.datatype.DoubleField
 import com.jpweytjens.barberfish.datatype.ElevationSparklineField
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HUDDataType
 import com.jpweytjens.barberfish.datatype.RouteRemainingField
 import com.jpweytjens.barberfish.datatype.SparklineRender
+import com.jpweytjens.barberfish.datatype.shared.DoubleState
 import com.jpweytjens.barberfish.datatype.shared.GradeReading
 import com.jpweytjens.barberfish.datatype.shared.overviewPreviewBitmap
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
@@ -22,6 +24,8 @@ import com.jpweytjens.barberfish.datatype.shared.rvvPoisFixture
 import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
 import com.jpweytjens.barberfish.datatype.sparklineImageSize
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
+import com.jpweytjens.barberfish.extension.DoubleLabel
+import com.jpweytjens.barberfish.extension.DoubleOrientation
 import com.jpweytjens.barberfish.extension.RouteRemainingConfig
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
@@ -119,6 +123,30 @@ class AllFieldPreviewsRenderTest {
                 writePreviewPng(fourCol, "${hud.typeId}-4col", hudConfig, design, context, outDir)
             } finally {
                 runBlocking { context.saveHUDConfig(originalHudConfig) }
+            }
+
+            // Double renders: Double 1's sampled moment in each orientation and label style, at
+            // the grid's half-width cell and on a five-row page, into a subdir so the contact
+            // sheet grid skips them.
+            val doublesDir = File(outDir, "doubles").apply { mkdirs() }
+            val double = types.filterIsInstance<DoubleField>().first()
+            val doubleState = samples.first { it.type === double }.state as DoubleState
+            val fiveRow = cellConfig.copy(gridSize = 30 to 12, viewSize = 240 to 126, textSize = 46)
+            for (orientation in DoubleOrientation.entries) {
+                for (label in DoubleLabel.entries) {
+                    val state = doubleState.copy(orientation = orientation, label = label)
+                    val name = "double-${orientation.name.lowercase()}-${label.name.lowercase()}"
+                    for ((suffix, config) in listOf("" to cellConfig, "-5row" to fiveRow)) {
+                        writePreviewPng(
+                            Sample(double, state),
+                            name + suffix,
+                            config,
+                            design,
+                            context,
+                            doublesDir,
+                        )
+                    }
+                }
             }
 
             // Doc renders: the three Grade statuses as single-cell crops for

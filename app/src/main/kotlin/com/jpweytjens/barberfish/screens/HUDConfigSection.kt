@@ -579,7 +579,7 @@ private val ZONE_COLORED_SLOT_FIELDS: Set<HUDSlotField> =
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HUDSlotFieldCard(
+internal fun HUDSlotFieldCard(
     slot: HUDSlotConfig,
     profile: UserProfile,
     onUpdate: (HUDSlotConfig) -> Unit,
@@ -656,42 +656,45 @@ private fun HUDSlotFieldCard(
     }
 }
 
+/** The slot field's name as the data field picker lists it. */
+internal fun HUDSlotField.displayName(): String =
+    when (val f = this) {
+        HUDSlotField.Power -> "Power"
+        HUDSlotField.AvgPower -> "Avg Power"
+        HUDSlotField.NP -> "Normalized Power"
+        HUDSlotField.LapPower -> "Lap Power"
+        HUDSlotField.LastLapPower -> "Last Lap Power"
+        HUDSlotField.PowerZone -> "Power Zone"
+        HUDSlotField.MaxPower -> "Max Power"
+        HUDSlotField.HR -> "Heart rate"
+        HUDSlotField.AvgHR -> "Avg heart rate"
+        HUDSlotField.LapAvgHR -> "Lap avg heart rate"
+        HUDSlotField.LastLapAvgHR -> "Last lap avg heart rate"
+        HUDSlotField.HRMaxPercent -> "%Max HR"
+        HUDSlotField.MaxHR -> "Max HR"
+        HUDSlotField.HRZone -> "HR Zone"
+        HUDSlotField.Speed -> "Speed"
+        is HUDSlotField.AvgSpeed ->
+            if (f.includePaused) "Avg Speed (Total)" else "Avg Speed (Moving)"
+        HUDSlotField.Cadence -> "Cadence"
+        HUDSlotField.AvgCadence -> "Avg Cadence"
+        HUDSlotField.LapAvgCadence -> "Lap Avg Cadence"
+        HUDSlotField.LastLapAvgCadence -> "Last Lap Avg Cadence"
+        HUDSlotField.MaxCadence -> "Max Cadence"
+        HUDSlotField.Grade -> "Grade"
+        HUDSlotField.Wind -> "Wind"
+        HUDSlotField.Distance -> "Distance"
+        HUDSlotField.DistanceRemaining -> "Distance remaining"
+        HUDSlotField.ElevationRemaining -> "Ascent remaining"
+        HUDSlotField.DescentRemaining -> "Descent remaining"
+        is HUDSlotField.Time -> f.kind.label.replace("\n", " ")
+        is HUDSlotField.ETA -> f.kind.label.replace("\n", " ")
+    }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
-    val fieldLabel =
-        when (val f = slot.field) {
-            HUDSlotField.Power -> "Power"
-            HUDSlotField.AvgPower -> "Avg Power"
-            HUDSlotField.NP -> "Normalized Power"
-            HUDSlotField.LapPower -> "Lap Power"
-            HUDSlotField.LastLapPower -> "Last Lap Power"
-            HUDSlotField.PowerZone -> "Power Zone"
-            HUDSlotField.MaxPower -> "Max Power"
-            HUDSlotField.HR -> "Heart rate"
-            HUDSlotField.AvgHR -> "Avg heart rate"
-            HUDSlotField.LapAvgHR -> "Lap avg heart rate"
-            HUDSlotField.LastLapAvgHR -> "Last lap avg heart rate"
-            HUDSlotField.HRMaxPercent -> "%Max HR"
-            HUDSlotField.MaxHR -> "Max HR"
-            HUDSlotField.HRZone -> "HR Zone"
-            HUDSlotField.Speed -> "Speed"
-            is HUDSlotField.AvgSpeed ->
-                if (f.includePaused) "Avg Speed (Total)" else "Avg Speed (Moving)"
-            HUDSlotField.Cadence -> "Cadence"
-            HUDSlotField.AvgCadence -> "Avg Cadence"
-            HUDSlotField.LapAvgCadence -> "Lap Avg Cadence"
-            HUDSlotField.LastLapAvgCadence -> "Last Lap Avg Cadence"
-            HUDSlotField.MaxCadence -> "Max Cadence"
-            HUDSlotField.Grade -> "Grade"
-            HUDSlotField.Wind -> "Wind"
-            HUDSlotField.Distance -> "Distance"
-            HUDSlotField.DistanceRemaining -> "Distance remaining"
-            HUDSlotField.ElevationRemaining -> "Ascent remaining"
-            HUDSlotField.DescentRemaining -> "Descent remaining"
-            is HUDSlotField.Time -> f.kind.label.replace("\n", " ")
-            is HUDSlotField.ETA -> f.kind.label.replace("\n", " ")
-        }
+    val fieldLabel = slot.field.displayName()
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         OutlinedTextField(

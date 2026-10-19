@@ -149,6 +149,7 @@ import com.jpweytjens.barberfish.extension.CadenceStatFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
 import com.jpweytjens.barberfish.extension.ChevronEmphasis
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
+import com.jpweytjens.barberfish.extension.DoubleFieldKind
 import com.jpweytjens.barberfish.extension.ETAConfig
 import com.jpweytjens.barberfish.extension.EffortFieldConfig
 import com.jpweytjens.barberfish.extension.ElevationSimplification
@@ -188,6 +189,7 @@ import com.jpweytjens.barberfish.extension.saveAvgSpeedConfig
 import com.jpweytjens.barberfish.extension.saveCadenceFieldConfig
 import com.jpweytjens.barberfish.extension.saveCadenceStatFieldConfig
 import com.jpweytjens.barberfish.extension.saveDataFieldDesignConfig
+import com.jpweytjens.barberfish.extension.saveDoubleFieldConfig
 import com.jpweytjens.barberfish.extension.saveETAConfig
 import com.jpweytjens.barberfish.extension.saveEffortFieldConfig
 import com.jpweytjens.barberfish.extension.saveFieldSparklineConfig
@@ -289,6 +291,9 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun ConfigScreen() {
         var hudConfig by remember { mutableStateOf(HUDConfig()) }
+        var doubleConfigs by remember {
+            mutableStateOf(DoubleFieldKind.entries.associateWith { it.default })
+        }
         var hudSparklineConfig by remember { mutableStateOf(SparklineConfig()) }
         var fieldSparklineConfig by remember { mutableStateOf(SparklineConfig()) }
         var gradeMapConfig by remember { mutableStateOf(GradeMapConfig()) }
@@ -344,6 +349,7 @@ class MainActivity : ComponentActivity() {
 
         var fieldsExpanded by remember { mutableStateOf(false) }
         var hudExpanded by remember { mutableStateOf(false) }
+        var doubleExpanded by remember { mutableStateOf(false) }
         var climbingExpanded by remember { mutableStateOf(false) }
         var etaExpanded by remember { mutableStateOf(false) }
         var palettesExpanded by remember { mutableStateOf(false) }
@@ -354,6 +360,7 @@ class MainActivity : ComponentActivity() {
             launch {
                 streamConfigSnapshot().collect { snapshot ->
                     hudConfig = snapshot.hud
+                    doubleConfigs = snapshot.doubleFields
                     hudSparklineConfig = snapshot.hudSparkline
                     fieldSparklineConfig = snapshot.fieldSparkline
                     gradeMapConfig = snapshot.gradeMap
@@ -440,6 +447,23 @@ class MainActivity : ComponentActivity() {
                             },
                         )
                     } // end HUD
+
+                    CollapsibleSection(
+                        section = ConfigSection.DOUBLE_FIELDS,
+                        expanded = doubleExpanded,
+                        onToggle = { doubleExpanded = !doubleExpanded },
+                    ) {
+                        DoubleFieldsSection(
+                            configs = doubleConfigs,
+                            zoneConfig = zoneConfig,
+                            timeCfg = timeConfig,
+                            profile = userProfile,
+                            onUpdate = { kind, updated ->
+                                doubleConfigs = doubleConfigs + (kind to updated)
+                                lifecycleScope.launch { saveDoubleFieldConfig(kind, updated) }
+                            },
+                        )
+                    } // end Double fields
 
                     val powerPreviewStates =
                         remember(powerFieldConfig, userProfile, zoneConfig) {
@@ -1640,7 +1664,7 @@ internal fun <T> SmoothingSlider(
     }
 }
 
-// The config screen's seven sections, in on-screen order. Titles, tags, descriptions,
+// The config screen's eight sections, in on-screen order. Titles, tags, descriptions,
 // and icons live here once; ConfigScreen and the screenshot render test both draw from it.
 internal enum class ConfigSection(
     val title: String,
@@ -1655,6 +1679,12 @@ internal enum class ConfigSection(
         R.drawable.ic_section_palette,
     ),
     HUD("HUD", "hud", "Slots and layout for the heads-up display", R.drawable.ic_section_hud),
+    DOUBLE_FIELDS(
+        "Double fields",
+        "double-fields",
+        "Two data fields in one cell, side by side or stacked",
+        R.drawable.ic_section_double,
+    ),
     DATA_FIELDS(
         "Data fields",
         "data-fields",
