@@ -122,61 +122,59 @@ private const val CHEVRON_LOOKAHEAD_PX = 800.0
 // Order matches extension_info.xml — keep in sync when adding fields.
 // Top-level so the instrumented preview-render harness can iterate every field.
 fun barberfishDataTypes(karooSystem: KarooSystemService): List<BarberfishBase<*>> =
-    listOf(
-        HUDField(karooSystem),
-        DoubleField(karooSystem, DoubleFieldKind.DOUBLE_1),
-        DoubleField(karooSystem, DoubleFieldKind.DOUBLE_2),
-        DoubleField(karooSystem, DoubleFieldKind.DOUBLE_3),
-        // Power
-        PowerField(karooSystem),
-        AvgPowerField(karooSystem),
-        NPField(karooSystem),
-        LapPowerField(karooSystem, isLastLap = false),
-        LapPowerField(karooSystem, isLastLap = true),
-        PowerZoneField(karooSystem),
-        MaxPowerField(karooSystem),
-        // HR
-        HRField(karooSystem),
-        AvgHRField(karooSystem),
-        LapAvgHRField(karooSystem),
-        LastLapAvgHRField(karooSystem),
-        HRMaxPercentField(karooSystem),
-        MaxHRField(karooSystem),
-        HRZoneField(karooSystem),
-        // Speed
-        SpeedField(karooSystem),
-        AvgSpeedField(karooSystem, includePaused = true),
-        AvgSpeedField(karooSystem, includePaused = false),
-        // Other
-        CadenceField(karooSystem),
-        CadenceStatField(karooSystem, CadenceStatKind.AVG),
-        CadenceStatField(karooSystem, CadenceStatKind.LAP_AVG),
-        CadenceStatField(karooSystem, CadenceStatKind.LAST_LAP_AVG),
-        CadenceStatField(karooSystem, CadenceStatKind.MAX),
-        WindField(karooSystem),
-        GradeField(karooSystem),
-        ElevationSparklineField(karooSystem),
-        // Distance & route-remaining
-        ValueField(karooSystem, ValueKind.DISTANCE),
-        ValueField(karooSystem, ValueKind.DISTANCE_REMAINING),
-        ValueField(karooSystem, ValueKind.ELEVATION_REMAINING),
-        ValueField(karooSystem, ValueKind.DESCENT_REMAINING),
-        EffortField(karooSystem),
-        RouteRemainingField(karooSystem),
-        // Time
-        TimeField(karooSystem, TimeKind.TOTAL),
-        TimeField(karooSystem, TimeKind.RIDING),
-        TimeField(karooSystem, TimeKind.PAUSED),
-        TimeField(karooSystem, TimeKind.LAP),
-        TimeField(karooSystem, TimeKind.LAST_LAP),
-        ETAField(karooSystem, ETAKind.REMAINING_RIDE_TIME),
-        ETAField(karooSystem, ETAKind.TIME_TO_DESTINATION),
-        ETAField(karooSystem, ETAKind.TIME_OF_ARRIVAL),
-        TimeField(karooSystem, TimeKind.TIME_TO_SUNRISE),
-        TimeField(karooSystem, TimeKind.TIME_TO_SUNSET),
-        TimeField(karooSystem, TimeKind.TIME_TO_CIVIL_DAWN),
-        TimeField(karooSystem, TimeKind.TIME_TO_CIVIL_DUSK),
-    )
+    listOf<BarberfishBase<*>>(HUDField(karooSystem)) +
+        DoubleFieldKind.entries.map { DoubleField(karooSystem, it) } +
+        listOf(
+            // Power
+            PowerField(karooSystem),
+            AvgPowerField(karooSystem),
+            NPField(karooSystem),
+            LapPowerField(karooSystem, isLastLap = false),
+            LapPowerField(karooSystem, isLastLap = true),
+            PowerZoneField(karooSystem),
+            MaxPowerField(karooSystem),
+            // HR
+            HRField(karooSystem),
+            AvgHRField(karooSystem),
+            LapAvgHRField(karooSystem),
+            LastLapAvgHRField(karooSystem),
+            HRMaxPercentField(karooSystem),
+            MaxHRField(karooSystem),
+            HRZoneField(karooSystem),
+            // Speed
+            SpeedField(karooSystem),
+            AvgSpeedField(karooSystem, includePaused = true),
+            AvgSpeedField(karooSystem, includePaused = false),
+            // Other
+            CadenceField(karooSystem),
+            CadenceStatField(karooSystem, CadenceStatKind.AVG),
+            CadenceStatField(karooSystem, CadenceStatKind.LAP_AVG),
+            CadenceStatField(karooSystem, CadenceStatKind.LAST_LAP_AVG),
+            CadenceStatField(karooSystem, CadenceStatKind.MAX),
+            WindField(karooSystem),
+            GradeField(karooSystem),
+            ElevationSparklineField(karooSystem),
+            // Distance & route-remaining
+            ValueField(karooSystem, ValueKind.DISTANCE),
+            ValueField(karooSystem, ValueKind.DISTANCE_REMAINING),
+            ValueField(karooSystem, ValueKind.ELEVATION_REMAINING),
+            ValueField(karooSystem, ValueKind.DESCENT_REMAINING),
+            EffortField(karooSystem),
+            RouteRemainingField(karooSystem),
+            // Time
+            TimeField(karooSystem, TimeKind.TOTAL),
+            TimeField(karooSystem, TimeKind.RIDING),
+            TimeField(karooSystem, TimeKind.PAUSED),
+            TimeField(karooSystem, TimeKind.LAP),
+            TimeField(karooSystem, TimeKind.LAST_LAP),
+            ETAField(karooSystem, ETAKind.REMAINING_RIDE_TIME),
+            ETAField(karooSystem, ETAKind.TIME_TO_DESTINATION),
+            ETAField(karooSystem, ETAKind.TIME_OF_ARRIVAL),
+            TimeField(karooSystem, TimeKind.TIME_TO_SUNRISE),
+            TimeField(karooSystem, TimeKind.TIME_TO_SUNSET),
+            TimeField(karooSystem, TimeKind.TIME_TO_CIVIL_DAWN),
+            TimeField(karooSystem, TimeKind.TIME_TO_CIVIL_DUSK),
+        )
 
 class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAME) {
 

@@ -181,17 +181,25 @@ class DoubleFieldTest {
     }
 
     @Test
-    fun `each Double has its own key, type id and default slots`() {
+    fun `six Doubles, each with its own key, type id and default slots`() {
         val kinds = DoubleFieldKind.entries
-        assertEquals(listOf("double-1", "double-2", "double-3"), kinds.map { it.typeId })
-        assertEquals(kinds.size, kinds.map { it.key.name }.toSet().size)
-        assertTrue(kinds.all { it.key.name.startsWith("double_field_") })
-        assertEquals(HUDSlotField.Power, DoubleFieldKind.DOUBLE_1.default.first.field)
-        assertEquals(HUDSlotField.HR, DoubleFieldKind.DOUBLE_1.default.second.field)
-        assertEquals(HUDSlotField.Speed, DoubleFieldKind.DOUBLE_2.default.first.field)
-        assertEquals(HUDSlotField.Cadence, DoubleFieldKind.DOUBLE_2.default.second.field)
-        assertEquals(HUDSlotField.AvgPower, DoubleFieldKind.DOUBLE_3.default.first.field)
-        assertEquals(HUDSlotField.AvgCadence, DoubleFieldKind.DOUBLE_3.default.second.field)
+        assertEquals(6, kinds.size)
+        assertEquals((1..6).map { "double-$it" }, kinds.map { it.typeId })
+        assertEquals((1..6).map { "double_field_${it}_config" }, kinds.map { it.key.name })
+        assertEquals((1..6).map { "Double $it" }, kinds.map { it.title })
+        assertEquals(
+            listOf(
+                HUDSlotField.Power to HUDSlotField.HR,
+                HUDSlotField.Speed to HUDSlotField.Cadence,
+                HUDSlotField.AvgPower to HUDSlotField.AvgCadence,
+                HUDSlotField.LapPower to HUDSlotField.LapAvgHR,
+                HUDSlotField.NP to HUDSlotField.AvgHR,
+                HUDSlotField.Grade to HUDSlotField.DistanceRemaining,
+            ),
+            kinds.map { it.default.first.field to it.default.second.field },
+        )
+        // No two Doubles start out showing the same pair.
+        assertEquals(kinds.size, kinds.map { it.default }.toSet().size)
         assertTrue(
             kinds.all {
                 it.default.orientation == DoubleOrientation.HORIZONTAL &&

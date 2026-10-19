@@ -1,6 +1,10 @@
 package com.jpweytjens.barberfish.screens
 
 import android.graphics.Bitmap
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -56,8 +60,8 @@ private val DOUBLE_PREVIEW_WIDTH = 128.dp
 private val DOUBLE_PREVIEW_HEIGHT = 85.dp
 private const val DOUBLE_PREVIEW_TEXT_SP = 50
 
-// Preview moment the screenshot tool freezes on: the steep climb of the preview ride, as in the
-// HUD preview.
+// Preview moment the screenshot tool freezes on, and the closed cards' still: the steep climb of
+// the preview ride, as in the HUD preview.
 private const val SCREENSHOT_MOMENT_INDEX = 4
 
 /**
@@ -76,7 +80,7 @@ internal fun DoubleFieldsSection(
     initialSelectedSlot: Int? = null,
 ) {
     var selected by remember { mutableStateOf(initialSelected) }
-    HelperText("Place Double 1, 2 or 3 on a data page, then set what each shows here.")
+    HelperText("Place a Double on a data page, then set what it shows here. Tap a card to open it.")
     DoubleFieldKind.entries.forEach { kind ->
         DoubleFieldCard(
             kind = kind,
@@ -111,6 +115,17 @@ private fun DoubleFieldCard(
         onSelect = onSelect,
         testTag = "bf:double:${kind.number}",
         headerExtra = { HelperText(config.summary()) },
+        // Closed, the card keeps a small still of the Double so six of them stay easy to tell
+        // apart; open, the full preview below takes over.
+        headerTrailing = {
+            AnimatedVisibility(
+                visible = !selected,
+                enter = fadeIn(tween(SECTION_ANIM_MS)),
+                exit = fadeOut(tween(SECTION_ANIM_MS)),
+            ) {
+                DoubleThumbnail(config, zoneConfig, timeCfg, profile)
+            }
+        },
     ) {
         ChoiceRow(
             label = "ORIENTATION",
@@ -138,23 +153,59 @@ private fun DoubleFieldCard(
                 modifier = Modifier.testTag("bf:double:${kind.number}:preview"),
             )
         }
-        when (selectedSlot) {
-            0 ->
-                HUDSlotFieldCard(
-                    slot = config.first,
-                    profile = profile,
-                    onUpdate = { onUpdate(config.copy(first = it)) },
-                    windSpeedApplies = config.windSpeedApplies,
-                )
-            1 ->
-                HUDSlotFieldCard(
-                    slot = config.second,
-                    profile = profile,
-                    onUpdate = { onUpdate(config.copy(second = it)) },
-                    windSpeedApplies = config.windSpeedApplies,
-                )
-        }
+        DoubleSlotCard(config, selectedSlot, profile, onUpdate)
     }
+}
+
+/** The selected slot's field card, the one a HUD column uses; nothing while none is selected. */
+@Composable
+private fun DoubleSlotCard(
+    config: DoubleFieldConfig,
+    selectedSlot: Int?,
+    profile: UserProfile,
+    onUpdate: (DoubleFieldConfig) -> Unit,
+) {
+    when (selectedSlot) {
+        0 ->
+            HUDSlotFieldCard(
+                slot = config.first,
+                profile = profile,
+                onUpdate = { onUpdate(config.copy(first = it)) },
+                windSpeedApplies = config.windSpeedApplies,
+            )
+        1 ->
+            HUDSlotFieldCard(
+                slot = config.second,
+                profile = profile,
+                onUpdate = { onUpdate(config.copy(second = it)) },
+                windSpeedApplies = config.windSpeedApplies,
+            )
+    }
+}
+
+/** The Double at the preview ride's climb moment, drawn at half the preview size. */
+@Composable
+private fun DoubleThumbnail(
+    config: DoubleFieldConfig,
+    zoneConfig: ZoneConfig,
+    timeCfg: TimeConfig,
+    profile: UserProfile,
+) {
+    val state =
+        remember(config, zoneConfig, timeCfg, profile) {
+            val states = DoubleField.previewStates(config, timeCfg, profile, zoneConfig)
+            states[SCREENSHOT_MOMENT_INDEX.coerceIn(states.indices)]
+        }
+    Image(
+        bitmap = rememberDoubleBitmap(state).asImageBitmap(),
+        contentDescription = null,
+        modifier =
+            Modifier.width(DOUBLE_PREVIEW_WIDTH / 2)
+                .height(DOUBLE_PREVIEW_HEIGHT / 2)
+                .clip(RoundedCornerShape(4.dp))
+                .background(if (isSystemInDarkTheme()) Color.Black else Color.White),
+        contentScale = ContentScale.FillBounds,
+    )
 }
 
 /** "Power and Heart rate, side by side": the card's one-line summary while it is closed. */

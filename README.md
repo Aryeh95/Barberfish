@@ -29,7 +29,7 @@ Barberfish fields sit alongside the native ones, match their look, and quietly a
 ## Highlights
 
 - A 3- or 4-column HUD [groups any fields side by side](docs/hud.md), with zone coloring, smoothing, and formatting set per slot.
-- Three [Double fields](docs/double-fields.md) fit two of those slots in one cell, side by side or stacked, labelled by icon, header, both, or not at all.
+- Six [Double fields](docs/double-fields.md) fit two of those slots in one cell, side by side or stacked, labelled by icon, header, both, or not at all.
 - With a route loaded, the [elevation profile](docs/elevation-profile.md) shows the terrain ahead or, in Climbs mode, [frames each climb foot to summit](docs/gallery.md#climbs-mode).
 - [Overview](docs/elevation-profile.md#the-overview-field) draws the whole route with a dot for where you are, and Ride Remaining stacks the distance and climbing left.
 - The grade map [colors the route on the map page by grade](docs/grade-map.md), with direction chevrons on top. It is in beta.
@@ -41,7 +41,7 @@ The [gallery](docs/gallery.md) shows more of Barberfish on the Karoo. The [docum
 
 ## Data fields
 
-47 fields across twelve categories: power, heart rate, speed, cadence, wind, climbing, navigation, time, ETA, daylight, the HUD, and the Double fields. The [data fields](docs/data-fields.md) page lists each field's palette, threshold, format, and smoothing options.
+50 fields across twelve categories: power, heart rate, speed, cadence, wind, climbing, navigation, time, ETA, daylight, the HUD, and the Double fields. The [data fields](docs/data-fields.md) page lists each field's palette, threshold, format, and smoothing options.
 
 ![Every Barberfish field, rendered as it appears in the Karoo field picker](docs/screenshots/all_fields.png)
 

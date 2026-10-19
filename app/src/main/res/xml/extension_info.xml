@@ -10,7 +10,7 @@
         displayName="@string/hud_name"
         description="@string/hud_description"
         graphical="true" />
-    <!-- Double fields -->
+    <!-- Double fields: one per entry of doubleFieldDefaults in Settings.kt -->
     <DataType
         icon="@drawable/ic_double"
         typeId="double-1"
@@ -27,6 +27,24 @@
         icon="@drawable/ic_double"
         typeId="double-3"
         displayName="@string/double_3_name"
+        description="@string/double_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_double"
+        typeId="double-4"
+        displayName="@string/double_4_name"
+        description="@string/double_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_double"
+        typeId="double-5"
+        displayName="@string/double_5_name"
+        description="@string/double_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_double"
+        typeId="double-6"
+        displayName="@string/double_6_name"
         description="@string/double_description"
         graphical="true" />
     <!-- Power -->

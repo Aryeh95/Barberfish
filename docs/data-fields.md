@@ -27,7 +27,7 @@ of its own, as do the [Double fields](double-fields.md) and
   <tbody>
     <tr><th colspan="5" align="center">HUD</th></tr>
     <tr><td>HUD</td><td>per-slot</td><td>per-slot</td><td>per-slot</td><td>per-slot</td></tr>
-    <tr><td>Double 1 / 2 / 3</td><td>per-slot</td><td>per-slot</td><td>per-slot</td><td>per-slot</td></tr>
+    <tr><td>Double 1 to 6</td><td>per-slot</td><td>per-slot</td><td>per-slot</td><td>per-slot</td></tr>
     <tr><th colspan="5" align="center">Power</th></tr>
     <tr><td>Power</td><td>Zone</td><td></td><td></td><td>Instant / 3s / 5s / 10s / 30s / 20m / 1h</td></tr>
     <tr><td>Avg Power</td><td>Zone</td><td></td><td></td><td></td></tr>

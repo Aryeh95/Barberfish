@@ -183,41 +183,44 @@ data class DoubleFieldConfig(
     val label: DoubleLabel = DoubleLabel.BOTH,
 )
 
-enum class DoubleFieldKind(
-    val number: Int,
-    internal val key: Preferences.Key<String>,
-    val default: DoubleFieldConfig,
-) {
-    DOUBLE_1(
-        1,
-        stringPreferencesKey("double_field_1_config"),
-        DoubleFieldConfig(
-            first = HUDSlotConfig(field = HUDSlotField.Power),
-            second = HUDSlotConfig(field = HUDSlotField.HR),
-        ),
-    ),
-    DOUBLE_2(
-        2,
-        stringPreferencesKey("double_field_2_config"),
-        DoubleFieldConfig(
-            first = HUDSlotConfig(field = HUDSlotField.Speed),
-            second = HUDSlotConfig(field = HUDSlotField.Cadence),
-        ),
-    ),
-    DOUBLE_3(
-        3,
-        stringPreferencesKey("double_field_3_config"),
-        DoubleFieldConfig(
-            first = HUDSlotConfig(field = HUDSlotField.AvgPower),
-            second = HUDSlotConfig(field = HUDSlotField.AvgCadence),
-        ),
-    );
+// The Double fields' default slots, one pair per Double in order: the one place their number
+// is set. The data types, settings keys and settings cards all follow this list; each Double
+// also needs its DataType entry in extension_info.xml and its double_N_name string.
+private val doubleFieldDefaults: List<Pair<HUDSlotField, HUDSlotField>> =
+    listOf(
+        HUDSlotField.Power to HUDSlotField.HR,
+        HUDSlotField.Speed to HUDSlotField.Cadence,
+        HUDSlotField.AvgPower to HUDSlotField.AvgCadence,
+        HUDSlotField.LapPower to HUDSlotField.LapAvgHR,
+        HUDSlotField.NP to HUDSlotField.AvgHR,
+        HUDSlotField.Grade to HUDSlotField.DistanceRemaining,
+    )
+
+/** One of the Double fields, numbered from 1 (see [entries]). */
+data class DoubleFieldKind(val number: Int) {
+    internal val key: Preferences.Key<String>
+        get() = stringPreferencesKey("double_field_${number}_config")
+
+    val default: DoubleFieldConfig
+        get() {
+            val (first, second) = doubleFieldDefaults[number - 1]
+            return DoubleFieldConfig(
+                first = HUDSlotConfig(field = first),
+                second = HUDSlotConfig(field = second),
+            )
+        }
 
     val typeId: String
         get() = "double-$number"
 
     val title: String
         get() = "Double $number"
+
+    companion object {
+        /** Every Double, in order: Double 1 to Double N. */
+        val entries: List<DoubleFieldKind> =
+            doubleFieldDefaults.indices.map { DoubleFieldKind(it + 1) }
+    }
 }
 
 fun Context.streamDoubleFieldConfig(kind: DoubleFieldKind): Flow<DoubleFieldConfig> =

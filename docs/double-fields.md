@@ -1,8 +1,19 @@
 # Double fields
 
-A Double puts two fields in one cell, side by side or one above the other. There are three of them, Double 1, 2 and 3, each set up on its own, so a page can carry Power and HR in one cell and Speed and Cadence in the next. They are listed with the other Barberfish fields under Extensions when you edit a data page.
+A Double puts two fields in one cell, side by side or one above the other. There are six of them, Double 1 to Double 6, each set up on its own, so a page can carry Power and HR in one cell and Speed and Cadence in the next. They are listed with the other Barberfish fields under Extensions when you edit a data page.
 
-Out of the box Double 1 shows Power and HR, Double 2 Speed and Cadence, and Double 3 Avg Power and Avg Cadence, side by side with icon and header.
+Out of the box they show, side by side with icon and header:
+
+| Double | Left | Right |
+| ------ | ---- | ----- |
+| 1 | Power | HR |
+| 2 | Speed | Cadence |
+| 3 | Avg Power | Avg Cadence |
+| 4 | Lap Avg Power | Lap Avg HR |
+| 5 | NP | Avg HR |
+| 6 | Grade | Distance Remaining |
+
+In the Double fields section of the Barberfish app each Double has a card. Closed, a card shows a small still of its Double, so the six are easy to tell apart; tap it to open its settings and live preview.
 
 ## Slots
 

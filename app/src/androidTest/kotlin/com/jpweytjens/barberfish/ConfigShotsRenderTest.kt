@@ -317,14 +317,14 @@ class ConfigShotsRenderTest {
     }
 
     // Double 1 open with its first value selected, so the card shows the preview and the slot's
-    // options; Double 2 stacked with icons, Double 3 left at its default, both closed.
+    // options; Double 2 stacked with icons and the rest at their defaults, all closed.
     private fun doubleShot(name: String, orientation: DoubleOrientation, label: DoubleLabel) {
         val scrollState = ScrollState(0)
         setShotContent(scrollable = true, scrollState = scrollState) {
             var configs by remember {
                 mutableStateOf(
                     DoubleFieldKind.entries.associateWith { it.default } +
-                        (DoubleFieldKind.DOUBLE_1 to
+                        (DoubleFieldKind(1) to
                             DoubleFieldConfig(
                                 first =
                                     HUDSlotConfig(
@@ -335,11 +335,13 @@ class ConfigShotsRenderTest {
                                 orientation = orientation,
                                 label = label,
                             )) +
-                        (DoubleFieldKind.DOUBLE_2 to
-                            DoubleFieldKind.DOUBLE_2.default.copy(
-                                orientation = DoubleOrientation.VERTICAL,
-                                label = DoubleLabel.ICON,
-                            ))
+                        (DoubleFieldKind(2) to
+                            DoubleFieldKind(2)
+                                .default
+                                .copy(
+                                    orientation = DoubleOrientation.VERTICAL,
+                                    label = DoubleLabel.ICON,
+                                ))
                 )
             }
             CollapsibleSection(
@@ -353,7 +355,7 @@ class ConfigShotsRenderTest {
                     timeCfg = TimeConfig(),
                     profile = shotProfile,
                     onUpdate = { kind, updated -> configs = configs + (kind to updated) },
-                    initialSelected = DoubleFieldKind.DOUBLE_1,
+                    initialSelected = DoubleFieldKind(1),
                     initialSelectedSlot = 0,
                 )
             }
