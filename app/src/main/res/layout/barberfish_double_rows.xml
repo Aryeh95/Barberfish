@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Double field, stacked. Each row is one bitmap (renderDoublePanelBitmap) drawn at the row's
+    pixel size, with the label beside the value so both rows fit a single-height cell. The 2dp
+    gap between the rows is DOUBLE_ROW_GAP_DP in DoubleField.kt.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/double_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:baselineAligned="false"
+    android:orientation="vertical">
+
+    <ImageView
+        android:id="@+id/double_panel_first"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:scaleType="fitCenter" />
+
+    <ImageView
+        android:id="@+id/double_panel_second"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="2dp"
+        android:layout_weight="1"
+        android:scaleType="fitCenter" />
+
+</LinearLayout>

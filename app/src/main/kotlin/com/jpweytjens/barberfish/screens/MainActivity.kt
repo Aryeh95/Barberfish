@@ -97,6 +97,8 @@ import com.jpweytjens.barberfish.datatype.AvgHRField
 import com.jpweytjens.barberfish.datatype.AvgPowerField
 import com.jpweytjens.barberfish.datatype.AvgSpeedField
 import com.jpweytjens.barberfish.datatype.CadenceField
+import com.jpweytjens.barberfish.datatype.CadenceStatField
+import com.jpweytjens.barberfish.datatype.CadenceStatKind
 import com.jpweytjens.barberfish.datatype.EffortField
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HRField
@@ -143,12 +145,15 @@ import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
+import com.jpweytjens.barberfish.extension.CadenceStatFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
 import com.jpweytjens.barberfish.extension.ChevronEmphasis
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
+import com.jpweytjens.barberfish.extension.DoubleFieldKind
 import com.jpweytjens.barberfish.extension.ETAConfig
 import com.jpweytjens.barberfish.extension.EffortFieldConfig
 import com.jpweytjens.barberfish.extension.ElevationSimplification
+import com.jpweytjens.barberfish.extension.FieldOrientation
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
 import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.GradePalette
@@ -183,7 +188,9 @@ import com.jpweytjens.barberfish.extension.ZoneDisplayMode
 import com.jpweytjens.barberfish.extension.saveAvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.saveAvgSpeedConfig
 import com.jpweytjens.barberfish.extension.saveCadenceFieldConfig
+import com.jpweytjens.barberfish.extension.saveCadenceStatFieldConfig
 import com.jpweytjens.barberfish.extension.saveDataFieldDesignConfig
+import com.jpweytjens.barberfish.extension.saveDoubleFieldConfig
 import com.jpweytjens.barberfish.extension.saveETAConfig
 import com.jpweytjens.barberfish.extension.saveEffortFieldConfig
 import com.jpweytjens.barberfish.extension.saveFieldSparklineConfig
@@ -215,6 +222,23 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private val STACK_ORDER_OPTIONS = listOf(false to "Distance", true to "Climb")
+
+private fun CadenceStatKind.cardTitle(): String =
+    when (this) {
+        CadenceStatKind.AVG -> "AVG CADENCE"
+        CadenceStatKind.LAP_AVG -> "LAP AVG CADENCE"
+        CadenceStatKind.LAST_LAP_AVG -> "LAST LAP AVG CADENCE"
+        CadenceStatKind.MAX -> "MAX CADENCE"
+    }
+
+private fun CadenceStatKind.cardDescription(): String =
+    when (this) {
+        CadenceStatKind.AVG -> "Average cadence with threshold coloring."
+        CadenceStatKind.LAP_AVG -> "Average cadence this lap with threshold coloring."
+        CadenceStatKind.LAST_LAP_AVG ->
+            "Average cadence from the previous lap with threshold coloring."
+        CadenceStatKind.MAX -> "Maximum cadence reached this ride, with threshold coloring."
+    }
 
 class MainActivity : ComponentActivity() {
 
@@ -268,6 +292,9 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun ConfigScreen() {
         var hudConfig by remember { mutableStateOf(HUDConfig()) }
+        var doubleConfigs by remember {
+            mutableStateOf(DoubleFieldKind.entries.associateWith { it.default })
+        }
         var hudSparklineConfig by remember { mutableStateOf(SparklineConfig()) }
         var fieldSparklineConfig by remember { mutableStateOf(SparklineConfig()) }
         var gradeMapConfig by remember { mutableStateOf(GradeMapConfig()) }
@@ -281,6 +308,9 @@ class MainActivity : ComponentActivity() {
         var hrZoneFieldConfig by remember { mutableStateOf(HRZoneFieldConfig()) }
         var speedFieldConfig by remember { mutableStateOf(SpeedFieldConfig()) }
         var cadenceFieldConfig by remember { mutableStateOf(CadenceFieldConfig()) }
+        var cadenceStatConfigs by remember {
+            mutableStateOf(CadenceStatKind.entries.associateWith { CadenceStatFieldConfig() })
+        }
         var windFieldConfig by remember { mutableStateOf(WindFieldConfig()) }
         var windSockConfig by remember { mutableStateOf(WindSockConfig()) }
         var avgPowerFieldConfig by remember { mutableStateOf(AvgPowerFieldConfig()) }
@@ -320,6 +350,7 @@ class MainActivity : ComponentActivity() {
 
         var fieldsExpanded by remember { mutableStateOf(false) }
         var hudExpanded by remember { mutableStateOf(false) }
+        var doubleExpanded by remember { mutableStateOf(false) }
         var climbingExpanded by remember { mutableStateOf(false) }
         var etaExpanded by remember { mutableStateOf(false) }
         var palettesExpanded by remember { mutableStateOf(false) }
@@ -330,6 +361,7 @@ class MainActivity : ComponentActivity() {
             launch {
                 streamConfigSnapshot().collect { snapshot ->
                     hudConfig = snapshot.hud
+                    doubleConfigs = snapshot.doubleFields
                     hudSparklineConfig = snapshot.hudSparkline
                     fieldSparklineConfig = snapshot.fieldSparkline
                     gradeMapConfig = snapshot.gradeMap
@@ -343,6 +375,7 @@ class MainActivity : ComponentActivity() {
                     hrZoneFieldConfig = snapshot.hrZoneField
                     speedFieldConfig = snapshot.speedField
                     cadenceFieldConfig = snapshot.cadenceField
+                    cadenceStatConfigs = snapshot.cadenceStatFields
                     windFieldConfig = snapshot.windField
                     windSockConfig = snapshot.windSock
                     avgPowerFieldConfig = snapshot.avgPowerField
@@ -415,6 +448,23 @@ class MainActivity : ComponentActivity() {
                             },
                         )
                     } // end HUD
+
+                    CollapsibleSection(
+                        section = ConfigSection.DOUBLE_FIELDS,
+                        expanded = doubleExpanded,
+                        onToggle = { doubleExpanded = !doubleExpanded },
+                    ) {
+                        DoubleFieldsSection(
+                            configs = doubleConfigs,
+                            zoneConfig = zoneConfig,
+                            timeCfg = timeConfig,
+                            profile = userProfile,
+                            onUpdate = { kind, updated ->
+                                doubleConfigs = doubleConfigs + (kind to updated)
+                                lifecycleScope.launch { saveDoubleFieldConfig(kind, updated) }
+                            },
+                        )
+                    } // end Double fields
 
                     val powerPreviewStates =
                         remember(powerFieldConfig, userProfile, zoneConfig) {
@@ -522,7 +572,7 @@ class MainActivity : ComponentActivity() {
                         }
                     val effortPreviewStates =
                         remember(effortFieldConfig, userProfile) {
-                            EffortField.previewStates(userProfile, effortFieldConfig.climbFirst)
+                            EffortField.previewStates(userProfile, effortFieldConfig)
                         }
 
                     CollapsibleSection(
@@ -1072,6 +1122,41 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        // Avg, lap avg, last lap avg and max cadence: the Cadence card's coloring,
+                        // without smoothing.
+                        CadenceStatKind.entries.forEach { kind ->
+                            val cfg = cadenceStatConfigs.getValue(kind)
+                            val title = kind.cardTitle()
+                            fun save(updated: CadenceStatFieldConfig) {
+                                cadenceStatConfigs = cadenceStatConfigs + (kind to updated)
+                                lifecycleScope.launch { saveCadenceStatFieldConfig(kind, updated) }
+                            }
+                            FieldCard(
+                                title = title,
+                                typeId = kind.typeId,
+                                description = kind.cardDescription(),
+                                previewFields =
+                                    remember(kind, cfg) {
+                                        CadenceStatField.previewStates(kind, cfg)
+                                    },
+                                colorMode = cfg.colorMode,
+                                selected = selectedDataField == title,
+                                onSelect = {
+                                    selectedDataField =
+                                        if (selectedDataField == title) null else title
+                                },
+                            ) {
+                                ZoneColorSlider(
+                                    selected = cfg.colorMode,
+                                    onSelected = { mode -> save(cfg.copy(colorMode = mode)) },
+                                )
+                                CadenceThresholdControls(
+                                    config = cfg.threshold,
+                                    onConfigChange = { save(cfg.copy(threshold = it)) },
+                                )
+                            }
+                        }
+
                         ControlLabel("WIND", modifier = Modifier.padding(top = 8.dp))
                         Box(Modifier.alpha(if (headwindInstalled) 1f else 0.45f)) {
                             FieldCard(
@@ -1168,7 +1253,7 @@ class MainActivity : ComponentActivity() {
                         FieldCard(
                             title = "RIDE REMAINING",
                             typeId = "remaining-effort",
-                            description = "Distance and ascent remaining, stacked.",
+                            description = "Distance and ascent remaining, stacked or side by side.",
                             previewFields = effortPreviewStates,
                             colorMode = ZoneColorMode.NONE,
                             selected = selectedDataField == "RIDE REMAINING",
@@ -1179,7 +1264,19 @@ class MainActivity : ComponentActivity() {
                             },
                         ) {
                             ChoiceRow(
-                                label = "STACK ORDER",
+                                label = "ORIENTATION",
+                                options = FieldOrientation.entries.map { it to it.label },
+                                selected = effortFieldConfig.orientation,
+                                onSelect = {
+                                    effortFieldConfig = effortFieldConfig.copy(orientation = it)
+                                    lifecycleScope.launch {
+                                        saveEffortFieldConfig(effortFieldConfig)
+                                    }
+                                },
+                                help = "One above the other, or side by side.",
+                            )
+                            ChoiceRow(
+                                label = "ORDER",
                                 options = STACK_ORDER_OPTIONS,
                                 selected = effortFieldConfig.climbFirst,
                                 onSelect = {
@@ -1580,7 +1677,7 @@ internal fun <T> SmoothingSlider(
     }
 }
 
-// The config screen's seven sections, in on-screen order. Titles, tags, descriptions,
+// The config screen's eight sections, in on-screen order. Titles, tags, descriptions,
 // and icons live here once; ConfigScreen and the screenshot render test both draw from it.
 internal enum class ConfigSection(
     val title: String,
@@ -1595,6 +1692,12 @@ internal enum class ConfigSection(
         R.drawable.ic_section_palette,
     ),
     HUD("HUD", "hud", "Slots and layout for the heads-up display", R.drawable.ic_section_hud),
+    DOUBLE_FIELDS(
+        "Double fields",
+        "double-fields",
+        "Two data fields in one cell, side by side or stacked",
+        R.drawable.ic_section_double,
+    ),
     DATA_FIELDS(
         "Data fields",
         "data-fields",
@@ -1845,7 +1948,8 @@ private fun RouteRemainingCard(
 }
 
 // Shared expand/collapse shell for FieldCard and SparklineCard. The header shows
-// `title` always; `headerExtra` (description + preview) animates in while selected,
+// `title` always; `headerExtra` (description + preview) animates
+// in while selected,
 // and `controls` is the Grey200 body revealed below. The everSelected gate lazy-mounts
 // the animated regions so the collapse animation can play on first deselect.
 @Composable

@@ -8,6 +8,8 @@ import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.formatFixed
+import com.jpweytjens.barberfish.extension.EffortFieldConfig
+import com.jpweytjens.barberfish.extension.FieldOrientation
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamEffortFieldConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
@@ -34,14 +36,14 @@ class EffortField(private val karooSystem: KarooSystemService) :
                 karooSystem.streamDataFlow(DataType.Type.ELEVATION_REMAINING),
                 context.streamEffortFieldConfig(),
             ) { distState, ascentState, config ->
-                toFieldState(distState, ascentState, profile, config.climbFirst)
+                toFieldState(distState, ascentState, profile, config)
             }
         }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
         karooSystem.streamUserProfile().flatMapLatest { profile ->
             context.streamEffortFieldConfig().flatMapLatest { config ->
-                cyclePreview(previewStates(profile, config.climbFirst))
+                cyclePreview(previewStates(profile, config))
             }
         }
 
@@ -56,12 +58,13 @@ class EffortField(private val karooSystem: KarooSystemService) :
         private fun effortFieldState(
             distText: String,
             ascentText: String,
-            climbFirst: Boolean,
+            config: EffortFieldConfig,
         ): FieldState {
             val climb = ASCENT_MARKER + ascentText
             return FieldState(
-                primary = if (climbFirst) climb else distText,
-                secondary = if (climbFirst) distText else climb,
+                primary = if (config.climbFirst) climb else distText,
+                secondary = if (config.climbFirst) distText else climb,
+                secondaryBeside = config.orientation == FieldOrientation.HORIZONTAL,
                 label = LABEL,
                 color = FieldColor.Default,
                 iconRes = ICON,
@@ -72,7 +75,7 @@ class EffortField(private val karooSystem: KarooSystemService) :
             distState: StreamState,
             ascentState: StreamState,
             profile: UserProfile,
-            climbFirst: Boolean,
+            config: EffortFieldConfig,
         ): FieldState {
             val distM = onRouteValue(distState, DataType.Field.DISTANCE_TO_DESTINATION)
             val ascentM = onRouteValue(ascentState, DataType.Field.ASCENT_REMAINING)
@@ -80,17 +83,17 @@ class EffortField(private val karooSystem: KarooSystemService) :
             return effortFieldState(
                 distText = formatFixed(ConvertType.DISTANCE.apply(distM, profile), 1),
                 ascentText = formatFixed(ConvertType.ELEVATION.apply(ascentM, profile), 0),
-                climbFirst = climbFirst,
+                config = config,
             )
         }
 
-        fun previewStates(profile: UserProfile, climbFirst: Boolean): List<FieldState> {
+        fun previewStates(profile: UserProfile, config: EffortFieldConfig): List<FieldState> {
             val samples = listOf(42_100.0 to 1240.0, 23_400.0 to 540.0, 4_800.0 to 80.0)
             return samples.map { (distM, ascentM) ->
                 effortFieldState(
                     distText = formatFixed(ConvertType.DISTANCE.apply(distM, profile), 1),
                     ascentText = formatFixed(ConvertType.ELEVATION.apply(ascentM, profile), 0),
-                    climbFirst = climbFirst,
+                    config = config,
                 )
             }
         }

@@ -55,6 +55,7 @@ import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.HUDField
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.applySparklineHeaderChrome
+import com.jpweytjens.barberfish.datatype.cadenceStatKind
 import com.jpweytjens.barberfish.datatype.shared.BarberfishYellow
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldState
@@ -554,12 +555,37 @@ private fun SparklineModeToggle(mode: SparklineMode, onSelect: (SparklineMode) -
     )
 }
 
+// Slot fields that take a zone or threshold color, and so show the ZONE COLOR control.
+private val ZONE_COLORED_SLOT_FIELDS: Set<HUDSlotField> =
+    setOf(
+        HUDSlotField.Power,
+        HUDSlotField.AvgPower,
+        HUDSlotField.NP,
+        HUDSlotField.LapPower,
+        HUDSlotField.LastLapPower,
+        HUDSlotField.PowerZone,
+        HUDSlotField.MaxPower,
+        HUDSlotField.HR,
+        HUDSlotField.AvgHR,
+        HUDSlotField.LapAvgHR,
+        HUDSlotField.LastLapAvgHR,
+        HUDSlotField.HRMaxPercent,
+        HUDSlotField.MaxHR,
+        HUDSlotField.HRZone,
+        HUDSlotField.Grade,
+        HUDSlotField.Wind,
+        HUDSlotField.Cadence,
+    )
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HUDSlotFieldCard(
+internal fun HUDSlotFieldCard(
     slot: HUDSlotConfig,
     profile: UserProfile,
     onUpdate: (HUDSlotConfig) -> Unit,
+    // False where the slot's host draws the wind without the ride speed (a stacked or label-free
+    // Double): the Wind slot's Show speed options are hidden, their stored values kept.
+    windSpeedApplies: Boolean = true,
 ) {
     Column(
         modifier =
@@ -600,8 +626,18 @@ private fun HUDSlotFieldCard(
                         onConfigChange = { onUpdate(slot.copy(avgSpeedConfig = it)) },
                     )
                 HUDSlotField.Cadence -> HUDCadenceCard(slot, onUpdate)
+                HUDSlotField.AvgCadence,
+                HUDSlotField.LapAvgCadence,
+                HUDSlotField.LastLapAvgCadence,
+                HUDSlotField.MaxCadence ->
+                    CadenceThresholdControls(
+                        config = slot.cadenceThreshold,
+                        onConfigChange = { onUpdate(slot.copy(cadenceThreshold = it)) },
+                    )
                 HUDSlotField.Grade -> HUDGradeCard(slot, onUpdate)
-                HUDSlotField.Wind -> HUDWindCard(slot, onUpdate)
+                HUDSlotField.Wind ->
+                    if (windSpeedApplies) HUDWindCard(slot, onUpdate)
+                    else HelperText("Show speed works when the Double is horizontal with a label.")
                 HUDSlotField.Distance -> {}
                 HUDSlotField.DistanceRemaining -> {}
                 HUDSlotField.ElevationRemaining -> {}
@@ -609,25 +645,7 @@ private fun HUDSlotFieldCard(
                 is HUDSlotField.Time -> {}
                 is HUDSlotField.ETA -> {}
             }
-            if (
-                slot.field == HUDSlotField.Power ||
-                    slot.field == HUDSlotField.AvgPower ||
-                    slot.field == HUDSlotField.NP ||
-                    slot.field == HUDSlotField.LapPower ||
-                    slot.field == HUDSlotField.LastLapPower ||
-                    slot.field == HUDSlotField.PowerZone ||
-                    slot.field == HUDSlotField.MaxPower ||
-                    slot.field == HUDSlotField.HR ||
-                    slot.field == HUDSlotField.AvgHR ||
-                    slot.field == HUDSlotField.LapAvgHR ||
-                    slot.field == HUDSlotField.LastLapAvgHR ||
-                    slot.field == HUDSlotField.HRMaxPercent ||
-                    slot.field == HUDSlotField.MaxHR ||
-                    slot.field == HUDSlotField.HRZone ||
-                    slot.field == HUDSlotField.Grade ||
-                    slot.field == HUDSlotField.Wind ||
-                    slot.field == HUDSlotField.Cadence
-            ) {
+            if (slot.field in ZONE_COLORED_SLOT_FIELDS || slot.field.cadenceStatKind != null) {
                 ZoneColorSlider(
                     selected = slot.colorMode,
                     onSelected = { onUpdate(slot.copy(colorMode = it)) },
@@ -643,38 +661,45 @@ private fun HUDSlotFieldCard(
     }
 }
 
+/** The slot field's name as the data field picker lists it. */
+internal fun HUDSlotField.displayName(): String =
+    when (val f = this) {
+        HUDSlotField.Power -> "Power"
+        HUDSlotField.AvgPower -> "Avg Power"
+        HUDSlotField.NP -> "Normalized Power"
+        HUDSlotField.LapPower -> "Lap Power"
+        HUDSlotField.LastLapPower -> "Last Lap Power"
+        HUDSlotField.PowerZone -> "Power Zone"
+        HUDSlotField.MaxPower -> "Max Power"
+        HUDSlotField.HR -> "Heart rate"
+        HUDSlotField.AvgHR -> "Avg heart rate"
+        HUDSlotField.LapAvgHR -> "Lap avg heart rate"
+        HUDSlotField.LastLapAvgHR -> "Last lap avg heart rate"
+        HUDSlotField.HRMaxPercent -> "%Max HR"
+        HUDSlotField.MaxHR -> "Max HR"
+        HUDSlotField.HRZone -> "HR Zone"
+        HUDSlotField.Speed -> "Speed"
+        is HUDSlotField.AvgSpeed ->
+            if (f.includePaused) "Avg Speed (Total)" else "Avg Speed (Moving)"
+        HUDSlotField.Cadence -> "Cadence"
+        HUDSlotField.AvgCadence -> "Avg Cadence"
+        HUDSlotField.LapAvgCadence -> "Lap Avg Cadence"
+        HUDSlotField.LastLapAvgCadence -> "Last Lap Avg Cadence"
+        HUDSlotField.MaxCadence -> "Max Cadence"
+        HUDSlotField.Grade -> "Grade"
+        HUDSlotField.Wind -> "Wind"
+        HUDSlotField.Distance -> "Distance"
+        HUDSlotField.DistanceRemaining -> "Distance remaining"
+        HUDSlotField.ElevationRemaining -> "Ascent remaining"
+        HUDSlotField.DescentRemaining -> "Descent remaining"
+        is HUDSlotField.Time -> f.kind.label.replace("\n", " ")
+        is HUDSlotField.ETA -> f.kind.label.replace("\n", " ")
+    }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
-    val fieldLabel =
-        when (val f = slot.field) {
-            HUDSlotField.Power -> "Power"
-            HUDSlotField.AvgPower -> "Avg Power"
-            HUDSlotField.NP -> "Normalized Power"
-            HUDSlotField.LapPower -> "Lap Power"
-            HUDSlotField.LastLapPower -> "Last Lap Power"
-            HUDSlotField.PowerZone -> "Power Zone"
-            HUDSlotField.MaxPower -> "Max Power"
-            HUDSlotField.HR -> "Heart rate"
-            HUDSlotField.AvgHR -> "Avg heart rate"
-            HUDSlotField.LapAvgHR -> "Lap avg heart rate"
-            HUDSlotField.LastLapAvgHR -> "Last lap avg heart rate"
-            HUDSlotField.HRMaxPercent -> "%Max HR"
-            HUDSlotField.MaxHR -> "Max HR"
-            HUDSlotField.HRZone -> "HR Zone"
-            HUDSlotField.Speed -> "Speed"
-            is HUDSlotField.AvgSpeed ->
-                if (f.includePaused) "Avg Speed (Total)" else "Avg Speed (Moving)"
-            HUDSlotField.Cadence -> "Cadence"
-            HUDSlotField.Grade -> "Grade"
-            HUDSlotField.Wind -> "Wind"
-            HUDSlotField.Distance -> "Distance"
-            HUDSlotField.DistanceRemaining -> "Distance remaining"
-            HUDSlotField.ElevationRemaining -> "Ascent remaining"
-            HUDSlotField.DescentRemaining -> "Descent remaining"
-            is HUDSlotField.Time -> f.kind.label.replace("\n", " ")
-            is HUDSlotField.ETA -> f.kind.label.replace("\n", " ")
-        }
+    val fieldLabel = slot.field.displayName()
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         OutlinedTextField(
@@ -717,7 +742,14 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
                             "Avg Speed (Total)" to HUDSlotField.AvgSpeed(includePaused = true),
                             "Avg Speed (Moving)" to HUDSlotField.AvgSpeed(includePaused = false),
                         ),
-                    "Cadence" to listOf("Cadence" to HUDSlotField.Cadence),
+                    "Cadence" to
+                        listOf(
+                            "Cadence" to HUDSlotField.Cadence,
+                            "Avg Cadence" to HUDSlotField.AvgCadence,
+                            "Lap Avg Cadence" to HUDSlotField.LapAvgCadence,
+                            "Last Lap Avg Cadence" to HUDSlotField.LastLapAvgCadence,
+                            "Max Cadence" to HUDSlotField.MaxCadence,
+                        ),
                     "Wind" to listOf("Wind" to HUDSlotField.Wind),
                     "Climbing" to listOf("Grade" to HUDSlotField.Grade),
                     "Navigation" to

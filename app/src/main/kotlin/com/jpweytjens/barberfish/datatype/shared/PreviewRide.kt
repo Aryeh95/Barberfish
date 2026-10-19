@@ -7,7 +7,7 @@ package com.jpweytjens.barberfish.datatype.shared
 // with a 13% grade and grinding cadence, the sprint spikes everything at once.
 //
 // Per-index invariants the lists maintain:
-// - maxPowerW / maxHrBpm are non-decreasing and >= the instantaneous value
+// - maxPowerW / maxHrBpm / maxCadenceRpm are non-decreasing and >= the instantaneous value
 // - npW >= avgPowerW (normalized power never reads below average power)
 // - lastLap* is lap* shifted one moment back
 // - elapsedS = ridingS + pausedS (elapsed always exceeds ride time)
@@ -25,12 +25,16 @@ internal object PreviewRide {
     val maxPowerW = listOf(385, 385, 425, 470, 540, 1234, 1234)
     val avgHrBpm = listOf(94, 108, 122, 134, 144, 152, 149)
     val maxHrBpm = listOf(152, 155, 161, 170, 182, 191, 191)
+    val avgCadenceRpm = listOf(78, 83, 86, 88, 85, 90, 87)
+    val maxCadenceRpm = listOf(96, 98, 102, 104, 104, 121, 121)
 
     // Lap aggregates track the current phase; last lap is the phase before it
     val lapPowerW = listOf(125, 180, 238, 288, 332, 520, 105)
     val lastLapPowerW = listOf(110, 125, 180, 238, 288, 332, 520)
     val lapAvgHrBpm = listOf(95, 124, 145, 160, 174, 184, 138)
     val lastLapAvgHrBpm = listOf(90, 95, 124, 145, 160, 174, 184)
+    val lapAvgCadenceRpm = listOf(80, 87, 91, 94, 70, 112, 65)
+    val lastLapAvgCadenceRpm = listOf(82, 80, 87, 91, 94, 70, 112)
 
     // Zone fields render a raw zone float directly
     val powerZone = listOf(1.3, 2.4, 3.2, 4.1, 5.3, 7.0, 1.1)

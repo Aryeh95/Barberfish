@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.jpweytjens.barberfish.datatype.CadenceStatKind
 import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
@@ -78,6 +79,14 @@ sealed interface HUDSlotField {
 
     @Serializable data object Cadence : HUDSlotField
 
+    @Serializable data object AvgCadence : HUDSlotField
+
+    @Serializable data object LapAvgCadence : HUDSlotField
+
+    @Serializable data object LastLapAvgCadence : HUDSlotField
+
+    @Serializable data object MaxCadence : HUDSlotField
+
     @Serializable data object AvgPower : HUDSlotField
 
     @Serializable data object NP : HUDSlotField
@@ -139,6 +148,87 @@ data class HUDSlotConfig(
     val windLayout: WindLayout = WindLayout.BARBERFISH,
     val windShowHeader: Boolean = true,
 )
+
+// --- DoubleFieldConfig ---
+// The three Double fields: two HUD slot configs in one Karoo cell, side by side or stacked. Each
+// Double has its own key; the slots keep every option they have in the HUD.
+
+/** How a field lays out two values: side by side, or one above the other. */
+@Serializable
+enum class FieldOrientation(val label: String) {
+    HORIZONTAL("Horizontal"),
+    VERTICAL("Vertical"),
+}
+
+/** What a Double draws to name each value: the field icon, the header text, both, or nothing. */
+@Serializable
+enum class DoubleLabel(val label: String) {
+    ICON("Icon"),
+    HEADER("Header"),
+    BOTH("Both"),
+    NONE("None");
+
+    val showsIcon: Boolean
+        get() = this == ICON || this == BOTH
+
+    val showsText: Boolean
+        get() = this == HEADER || this == BOTH
+}
+
+@Serializable
+data class DoubleFieldConfig(
+    // Left when horizontal, top when vertical.
+    val first: HUDSlotConfig = HUDSlotConfig(field = HUDSlotField.Power),
+    val second: HUDSlotConfig = HUDSlotConfig(field = HUDSlotField.HR),
+    val orientation: FieldOrientation = FieldOrientation.HORIZONTAL,
+    val label: DoubleLabel = DoubleLabel.BOTH,
+)
+
+// The Double fields' default slots, one pair per Double in order: the one place their number
+// is set. The data types, settings keys and settings cards all follow this list; each Double
+// also needs its DataType entry in extension_info.xml and its double_N_name string.
+private val doubleFieldDefaults: List<Pair<HUDSlotField, HUDSlotField>> =
+    listOf(
+        HUDSlotField.Power to HUDSlotField.HR,
+        HUDSlotField.Speed to HUDSlotField.Cadence,
+        HUDSlotField.AvgPower to HUDSlotField.AvgCadence,
+        HUDSlotField.LapPower to HUDSlotField.LapAvgHR,
+        HUDSlotField.NP to HUDSlotField.AvgHR,
+        HUDSlotField.Grade to HUDSlotField.DistanceRemaining,
+    )
+
+/** One of the Double fields, numbered from 1 (see [entries]). */
+data class DoubleFieldKind(val number: Int) {
+    internal val key: Preferences.Key<String>
+        get() = stringPreferencesKey("double_field_${number}_config")
+
+    val default: DoubleFieldConfig
+        get() {
+            val (first, second) = doubleFieldDefaults[number - 1]
+            return DoubleFieldConfig(
+                first = HUDSlotConfig(field = first),
+                second = HUDSlotConfig(field = second),
+            )
+        }
+
+    val typeId: String
+        get() = "double-$number"
+
+    val title: String
+        get() = "Double $number"
+
+    companion object {
+        /** Every Double, in order: Double 1 to Double N. */
+        val entries: List<DoubleFieldKind> =
+            doubleFieldDefaults.indices.map { DoubleFieldKind(it + 1) }
+    }
+}
+
+fun Context.streamDoubleFieldConfig(kind: DoubleFieldKind): Flow<DoubleFieldConfig> =
+    streamConfig(kind.key, kind.default)
+
+suspend fun Context.saveDoubleFieldConfig(kind: DoubleFieldKind, config: DoubleFieldConfig) =
+    saveConfig(kind.key, config)
 
 @Serializable
 enum class ElevationSimplification(val label: String, val minAreaM2: Float) {
@@ -620,6 +710,28 @@ fun Context.streamCadenceFieldConfig(): Flow<CadenceFieldConfig> =
 suspend fun Context.saveCadenceFieldConfig(config: CadenceFieldConfig) =
     saveConfig(cadenceFieldConfigKey, config)
 
+// --- CadenceStatFieldConfig ---
+// Avg, lap avg, last lap avg and max cadence: one config per field, each under its own key
+// (CadenceStatKind.configKey). Cadence has no Karoo zones, so these carry the Cadence field's
+// threshold coloring.
+
+@Serializable
+data class CadenceStatFieldConfig(
+    val threshold: CadenceThresholdConfig = CadenceThresholdConfig(),
+    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
+)
+
+private val CadenceStatKind.preferencesKey: Preferences.Key<String>
+    get() = stringPreferencesKey(configKey)
+
+fun Context.streamCadenceStatFieldConfig(kind: CadenceStatKind): Flow<CadenceStatFieldConfig> =
+    streamConfig(kind.preferencesKey, CadenceStatFieldConfig())
+
+suspend fun Context.saveCadenceStatFieldConfig(
+    kind: CadenceStatKind,
+    config: CadenceStatFieldConfig,
+) = saveConfig(kind.preferencesKey, config)
+
 // --- AvgPowerFieldConfig ---
 
 @Serializable data class AvgPowerFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
@@ -641,7 +753,12 @@ suspend fun Context.saveNPFieldConfig(config: NPFieldConfig) = saveConfig(npFiel
 
 // --- EffortFieldConfig ---
 
-@Serializable data class EffortFieldConfig(val climbFirst: Boolean = false)
+@Serializable
+data class EffortFieldConfig(
+    val climbFirst: Boolean = false,
+    // Distance and ascent one above the other (as before the setting existed) or side by side.
+    val orientation: FieldOrientation = FieldOrientation.VERTICAL,
+)
 
 private val effortFieldConfigKey = stringPreferencesKey("remaining_effort_field_config")
 
@@ -844,6 +961,7 @@ suspend fun Context.saveDataFieldDesignConfig(config: DataFieldDesignConfig) =
  */
 data class ConfigSnapshot(
     val hud: HUDConfig,
+    val doubleFields: Map<DoubleFieldKind, DoubleFieldConfig>,
     val hudSparkline: SparklineConfig,
     val fieldSparkline: SparklineConfig,
     val gradeMap: GradeMapConfig,
@@ -857,6 +975,7 @@ data class ConfigSnapshot(
     val hrZoneField: HRZoneFieldConfig,
     val speedField: SpeedFieldConfig,
     val cadenceField: CadenceFieldConfig,
+    val cadenceStatFields: Map<CadenceStatKind, CadenceStatFieldConfig>,
     val avgPowerField: AvgPowerFieldConfig,
     val npField: NPFieldConfig,
     val lapPowerField: LapPowerFieldConfig,
@@ -881,6 +1000,8 @@ fun Context.streamConfigSnapshot(): Flow<ConfigSnapshot> =
         .map { prefs ->
             ConfigSnapshot(
                 hud = prefs.config(hudConfigKey, HUDConfig()),
+                doubleFields =
+                    DoubleFieldKind.entries.associateWith { prefs.config(it.key, it.default) },
                 hudSparkline = prefs.hudSparklineConfig(),
                 fieldSparkline = prefs.fieldSparklineConfig(),
                 gradeMap = prefs.config(gradeMapConfigKey, GradeMapConfig()),
@@ -895,6 +1016,10 @@ fun Context.streamConfigSnapshot(): Flow<ConfigSnapshot> =
                 hrZoneField = prefs.config(hrZoneFieldConfigKey, HRZoneFieldConfig()),
                 speedField = prefs.config(speedFieldConfigKey, SpeedFieldConfig()),
                 cadenceField = prefs.config(cadenceFieldConfigKey, CadenceFieldConfig()),
+                cadenceStatFields =
+                    CadenceStatKind.entries.associateWith {
+                        prefs.config(it.preferencesKey, CadenceStatFieldConfig())
+                    },
                 avgPowerField = prefs.config(avgPowerFieldConfigKey, AvgPowerFieldConfig()),
                 npField = prefs.config(npFieldConfigKey, NPFieldConfig()),
                 lapPowerField = prefs.config(lapPowerFieldConfigKey, LapPowerFieldConfig()),

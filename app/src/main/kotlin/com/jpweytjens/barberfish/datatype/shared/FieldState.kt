@@ -11,8 +11,10 @@ data class FieldState(
     val color: FieldColor,
     val iconRes: Int? = null,
     val secondaryIconRes: Int? = null,
-    // Optional second value row, rendered stacked below `primary` (Remaining effort).
+    // Optional second value, rendered stacked below `primary` (Ride Remaining), or beside it
+    // when `secondaryBeside`.
     val secondary: String? = null,
+    val secondaryBeside: Boolean = false,
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
     // false drops the icon's teal "connected" tint to the theme foreground. Native gates
     // the ride-clock fields' icon green on the ride having started; everything else is

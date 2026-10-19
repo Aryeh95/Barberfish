@@ -1,0 +1,40 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="38dp"
+    android:height="38dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <group
+        android:scaleX="0.5"
+        android:scaleY="0.5"
+        android:translateX="0"
+        android:translateY="720">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M360-720h80v-80h-80v80Zm160 0v-80h80v80h-80ZM360-400v-80h80v80h-80Zm320-160v-80h80v80h-80Zm0 160v-80h80v80h-80Zm-160 0v-80h80v80h-80Zm160-320v-80h80v80h-80Zm-240 80v-80h80v80h-80ZM200-160v-640h80v80h80v80h-80v80h80v80h-80v320h-80Zm400-320v-80h80v80h-80Zm-160 0v-80h80v80h-80Zm-80-80v-80h80v80h-80Zm160 0v-80h80v80h-80Zm80-80v-80h80v80h-80Z" />
+    </group>
+    <!-- ic_avg_cadence (38 viewport) scaled into the right half, like ic_lap_power -->
+    <group
+        android:scaleX="12.631579"
+        android:scaleY="12.631579"
+        android:translateX="480"
+        android:translateY="240">
+        <!-- Average bar, as on ic_avg_power and ic_avg_hr -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M6,0 H31 V2 H6 Z" />
+        <!-- Chainring donut: outer r=12, inner r=9 — ring width=3 -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M19,7 A12,12,0,0,1,31,19 A12,12,0,0,1,19,31 A12,12,0,0,1,7,19 A12,12,0,0,1,19,7 Z M19,10 A9,9,0,0,0,10,19 A9,9,0,0,0,19,28 A9,9,0,0,0,28,19 A9,9,0,0,0,19,10 Z" />
+        <!-- Top-right crank arm: center → past outer circle, width=3 (offset ±1.1 at 45°),
+             shortened to the bottom arm's reach so it stays clear of the average bar -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M20.1,20.1 L31.7,8.5 L29.5,6.3 L17.9,17.9 Z" />
+        <!-- Bottom-left crank arm: outside ring only, width=3 -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M12.3,27.9 L7.4,32.8 L5.2,30.6 L10.1,25.7 Z" />
+    </group>
+</vector>

@@ -5,6 +5,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
+import com.jpweytjens.barberfish.extension.DoubleLabel
 import com.jpweytjens.barberfish.extension.LabelSize
 import io.hammerhead.karooext.models.ViewConfig
 
@@ -124,6 +125,51 @@ fun ViewConfig.toHudSlotSizeConfig(
             )
         else -> toViewSizeConfig(design = design)
     }
+
+// Share of the cell height a Double slot's header and value may fill together; the rest is the
+// breathing room native cells keep above and below the value.
+private const val DOUBLE_SLOT_HEIGHT_FILL = 0.94f
+
+private const val DOUBLE_MIN_VALUE_SP = 12
+
+/**
+ * Field sizing for one slot of a Double cell that shows [visibleSlots] fields side by side (1 when
+ * the other slot dropped out). Two slots size as half-width cells of this cell's height: the header
+ * follows the half span's native label size, and the value starts at the cell's own value size,
+ * shrunk so header and value fit the cell height (width fitting shrinks long values further).
+ * [label] decides the header icons.
+ */
+fun ViewConfig.toDoubleSlotSizeConfig(
+    visibleSlots: Int,
+    label: DoubleLabel,
+    design: DataFieldDesignConfig,
+    density: Float,
+): ViewSizeConfig {
+    val slots = visibleSlots.coerceIn(1, 2)
+    val span = (gridSize.first / slots).coerceAtLeast(1)
+    val native = toViewSizeConfig(colSpanOverride = span, design = design)
+    // A half of a half-width cell is a HUD slot's width: keep the HUD's label size there even on
+    // the denser pages, whose native label size is for cells twice as wide.
+    val hudLabel =
+        if (span <= FOUR_COLS) ViewSizeConfig.HUD_FOUR.headerFontSize.value
+        else ViewSizeConfig.HUD_THREE.headerFontSize.value
+    val labelSp = if (span < TWO_COLS) minOf(native.headerFontSize.value, hudLabel) else null
+    val base =
+        if (labelSp == null) native
+        else native.copy(headerFontSize = labelSp.sp, headerIconSize = labelSp.dp)
+    val headerPx = base.headerMinHeightDp * density
+    val roomSp =
+        ((viewSize.second * DOUBLE_SLOT_HEIGHT_FILL - headerPx) /
+                (VALUE_BITMAP_HEIGHT_RATIO * density))
+            .toInt()
+    val sp = minOf(roomSp, textSize).coerceAtLeast(DOUBLE_MIN_VALUE_SP)
+    return base.copy(
+        valueFontSizeBase = sp,
+        valueBitmapHeightDp = (VALUE_BITMAP_HEIGHT_RATIO * sp).toInt(),
+        cellWidthPxOverride = (viewSize.first / slots.toFloat()).takeIf { it > 0f },
+        showIcons = label.showsIcon,
+    )
+}
 
 // Preview-only: apply the design settings to a fixed preview ViewSizeConfig.
 // On-device the value font follows ViewConfig.textSize; previews have no SDK textSize,

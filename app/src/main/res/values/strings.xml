@@ -5,6 +5,13 @@
     <string name="header_probe" translatable="false">M</string>
     <string name="hud_name">HUD</string>
     <string name="hud_description">Heads-up display with speed, HR, and power in three columns with zone coloring</string>
+    <string name="double_1_name">Double 1</string>
+    <string name="double_2_name">Double 2</string>
+    <string name="double_3_name">Double 3</string>
+    <string name="double_4_name">Double 4</string>
+    <string name="double_5_name">Double 5</string>
+    <string name="double_6_name">Double 6</string>
+    <string name="double_description">Two data fields in one, side by side or stacked, set up in the Barberfish+ settings</string>
     <string name="power_name">Power</string>
     <string name="power_description">Current power output with smoothing and zone coloring</string>
     <string name="hr_name">Heart Rate</string>
@@ -37,6 +44,14 @@
     <string name="time_to_civil_dusk_description">Time until civil dusk at current location</string>
     <string name="cadence_name">Cadence</string>
     <string name="cadence_description">Current cadence with optional smoothing</string>
+    <string name="avg_cadence_name">Avg Cadence</string>
+    <string name="avg_cadence_description">Average cadence with optional threshold coloring</string>
+    <string name="lap_avg_cadence_name">Lap Cadence</string>
+    <string name="lap_avg_cadence_description">Average cadence this lap with optional threshold coloring</string>
+    <string name="last_lap_avg_cadence_name">Last Lap Cadence</string>
+    <string name="last_lap_avg_cadence_description">Average cadence from the previous lap with optional threshold coloring</string>
+    <string name="max_cadence_name">Max Cadence</string>
+    <string name="max_cadence_description">Maximum cadence reached this ride, with optional threshold coloring</string>
     <string name="wind_name">Wind</string>
     <string name="wind_description">Headwind speed and direction, from the Headwind extension</string>
     <string name="avg_power_name">Avg Power</string>
@@ -80,7 +95,7 @@
     <string name="descent_remaining_name">Descent Remaining</string>
     <string name="descent_remaining_description">Descent left to the destination.</string>
     <string name="remaining_effort_name">Ride Remaining</string>
-    <string name="remaining_effort_description">Distance and ascent remaining, stacked.</string>
+    <string name="remaining_effort_description">Distance and ascent remaining, stacked or side by side.</string>
     <string name="route_remaining_name">Overview</string>
     <string name="route_remaining_description">Whole-route elevation profile with your position.</string>
 </resources>

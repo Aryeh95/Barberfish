@@ -10,6 +10,43 @@
         displayName="@string/hud_name"
         description="@string/hud_description"
         graphical="true" />
+    <!-- Double fields: one per entry of doubleFieldDefaults in Settings.kt -->
+    <DataType
+        icon="@drawable/ic_double"
+        typeId="double-1"
+        displayName="@string/double_1_name"
+        description="@string/double_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_double"
+        typeId="double-2"
+        displayName="@string/double_2_name"
+        description="@string/double_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_double"
+        typeId="double-3"
+        displayName="@string/double_3_name"
+        description="@string/double_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_double"
+        typeId="double-4"
+        displayName="@string/double_4_name"
+        description="@string/double_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_double"
+        typeId="double-5"
+        displayName="@string/double_5_name"
+        description="@string/double_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_double"
+        typeId="double-6"
+        displayName="@string/double_6_name"
+        description="@string/double_description"
+        graphical="true" />
     <!-- Power -->
     <DataType
         icon="@drawable/ic_col_power"
@@ -121,6 +158,30 @@
         typeId="cadence"
         displayName="@string/cadence_name"
         description="@string/cadence_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_avg_cadence"
+        typeId="avg-cadence"
+        displayName="@string/avg_cadence_name"
+        description="@string/avg_cadence_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_lap_cadence"
+        typeId="lap-avg-cadence"
+        displayName="@string/lap_avg_cadence_name"
+        description="@string/lap_avg_cadence_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_last_lap_cadence"
+        typeId="last-lap-avg-cadence"
+        displayName="@string/last_lap_avg_cadence_name"
+        description="@string/last_lap_avg_cadence_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_cadence"
+        typeId="max-cadence"
+        displayName="@string/max_cadence_name"
+        description="@string/max_cadence_description"
         graphical="true" />
     <DataType
         icon="@drawable/ic_air"

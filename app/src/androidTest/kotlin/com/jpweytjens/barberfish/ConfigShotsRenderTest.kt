@@ -43,6 +43,10 @@ import com.jpweytjens.barberfish.datatype.shared.OceanBlue
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.datatype.shared.mapNeutral
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
+import com.jpweytjens.barberfish.extension.DoubleFieldConfig
+import com.jpweytjens.barberfish.extension.DoubleFieldKind
+import com.jpweytjens.barberfish.extension.DoubleLabel
+import com.jpweytjens.barberfish.extension.FieldOrientation
 import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.HUDConfig
@@ -58,6 +62,7 @@ import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.screens.CollapsibleSection
 import com.jpweytjens.barberfish.screens.ConfigSection
 import com.jpweytjens.barberfish.screens.DataFieldDesignSectionContent
+import com.jpweytjens.barberfish.screens.DoubleFieldsSection
 import com.jpweytjens.barberfish.screens.GradeBandSlider
 import com.jpweytjens.barberfish.screens.GradeMapCard
 import com.jpweytjens.barberfish.screens.HUDConfigSection
@@ -310,6 +315,60 @@ class ConfigShotsRenderTest {
         }
         captureTall("hud_config", scrollState)
     }
+
+    // Double 1 open with its first value selected, so the card shows the preview and the slot's
+    // options; Double 2 stacked with icons and the rest at their defaults, all closed.
+    private fun doubleShot(name: String, orientation: FieldOrientation, label: DoubleLabel) {
+        val scrollState = ScrollState(0)
+        setShotContent(scrollable = true, scrollState = scrollState) {
+            var configs by remember {
+                mutableStateOf(
+                    DoubleFieldKind.entries.associateWith { it.default } +
+                        (DoubleFieldKind(1) to
+                            DoubleFieldConfig(
+                                first =
+                                    HUDSlotConfig(
+                                        field = HUDSlotField.LastLapPower,
+                                        colorMode = ZoneColorMode.TEXT,
+                                    ),
+                                second = HUDSlotConfig(field = HUDSlotField.LapAvgCadence),
+                                orientation = orientation,
+                                label = label,
+                            )) +
+                        (DoubleFieldKind(2) to
+                            DoubleFieldKind(2)
+                                .default
+                                .copy(
+                                    orientation = FieldOrientation.VERTICAL,
+                                    label = DoubleLabel.ICON,
+                                ))
+                )
+            }
+            CollapsibleSection(
+                section = ConfigSection.DOUBLE_FIELDS,
+                expanded = true,
+                onToggle = {},
+            ) {
+                DoubleFieldsSection(
+                    configs = configs,
+                    zoneConfig = houseZones,
+                    timeCfg = TimeConfig(),
+                    profile = shotProfile,
+                    onUpdate = { kind, updated -> configs = configs + (kind to updated) },
+                    initialSelected = DoubleFieldKind(1),
+                    initialSelectedSlot = 0,
+                )
+            }
+        }
+        captureTall(name, scrollState)
+    }
+
+    @Test
+    fun doubleConfig() = doubleShot("double_config", FieldOrientation.HORIZONTAL, DoubleLabel.BOTH)
+
+    @Test
+    fun doubleStackedConfig() =
+        doubleShot("double_config_stacked", FieldOrientation.VERTICAL, DoubleLabel.HEADER)
 
     // The Wind column selected, with and without Show speed, so its slot card shows the switch.
     private fun windShot(

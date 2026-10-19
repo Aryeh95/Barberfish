@@ -7,6 +7,9 @@ Barberfish+, a personal fork of Barberfish 4.0:
 - The Wind field, HUD slot and map windsock from the upcoming wind work, which need the Headwind extension
 - Show speed on the Wind HUD slot: ride speed above the arrow and headwind number, with the total wind speed above the arrow
 - A Headwind layout for that slot, like karoo-headwind's Tailwind and ride speed field: a big arrow, the speed and a summary line in wind colors, with an option to hide the header for bigger digits
+- Double 1 to 6: two fields in one cell, side by side or stacked, each half any HUD slot with its options, labelled by icon, header, both or nothing, and set up in a new Double fields section
+- Ride Remaining can show the distance and ascent side by side as well as stacked
+- Avg Cadence, Lap Avg Cadence, Last Lap Avg Cadence and Max Cadence, as fields and as HUD slots, with Cadence's threshold coloring
 
 ## 4.0
 

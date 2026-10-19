@@ -7,9 +7,12 @@ import android.view.View
 import android.widget.RemoteViews
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.HUDState
+import com.jpweytjens.barberfish.datatype.shared.SlotState
+import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.slots
 import com.jpweytjens.barberfish.datatype.shared.toHudSlotSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.visibleColumns
+import com.jpweytjens.barberfish.datatype.shared.visibleSlots
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.flow.Flow
@@ -79,26 +82,42 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
                 R.id.hud_slot_right,
                 R.id.hud_slot_fourth,
             )
-        state.slots.forEachIndexed { index, slot ->
-            val slotId = slotIds[index]
-            if (index !in visible) {
-                rv.setViewVisibility(slotId, View.GONE)
-                return@forEachIndexed
-            }
-            rv.setViewVisibility(slotId, View.VISIBLE)
-            rv.removeAllViews(slotId)
-            rv.addView(
-                slotId,
-                barberfishFieldRemoteViews(
-                    field = slot.field,
-                    alignment = config.alignment,
-                    colorMode = slot.colorMode,
-                    sizeConfig = sizeConfig,
-                    preview = false,
-                    context = context,
-                ),
-            )
-        }
+        rv.fillSlotContainers(slotIds, state.slots, sizeConfig, config.alignment, context)
         return rv
+    }
+}
+
+/**
+ * Fills each container in [slotIds] with its slot's field, the same field layout a standalone cell
+ * uses, and hides the slots [visibleSlots] drops. The container layout's weights hand a hidden
+ * slot's room to the others.
+ */
+internal fun RemoteViews.fillSlotContainers(
+    slotIds: List<Int>,
+    slots: List<SlotState>,
+    sizeConfig: ViewSizeConfig,
+    alignment: ViewConfig.Alignment,
+    context: Context,
+) {
+    val visible = visibleSlots(slots)
+    slots.forEachIndexed { index, slot ->
+        val slotId = slotIds[index]
+        if (index !in visible) {
+            setViewVisibility(slotId, View.GONE)
+            return@forEachIndexed
+        }
+        setViewVisibility(slotId, View.VISIBLE)
+        removeAllViews(slotId)
+        addView(
+            slotId,
+            barberfishFieldRemoteViews(
+                field = slot.field,
+                alignment = alignment,
+                colorMode = slot.colorMode,
+                sizeConfig = sizeConfig,
+                preview = false,
+                context = context,
+            ),
+        )
     }
 }

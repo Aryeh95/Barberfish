@@ -75,6 +75,19 @@ barberfish_hud.xml (LinearLayout horizontal)
 
 The 4-col variant `barberfish_hud_four.xml` has the same shape plus a fourth `hud_slot_fourth` `FrameLayout`.
 
+`HUDSlotSource` turns one `HUDSlotConfig` into its live or preview `FieldState`s, and `fillSlotContainers` puts each into its `FrameLayout`, hiding the slots `visibleSlots` drops for a missing sensor. Both are shared with the Double fields.
+
+## Double layout
+
+`DoubleField` builds its two slots through `HUDSlotSource` and picks a `DoubleLayout` from the orientation, the label setting and the visible slots:
+
+- `FIELDS`: side by side with labels, `barberfish_double.xml`, two `FrameLayout` slots filled by `fillSlotContainers` as in the HUD, sized by `toDoubleSlotSizeConfig` (half the span, the HUD label size in narrow halves, the value shrunk so header and value fit the cell height).
+- `ROWS`: stacked, `barberfish_double_rows.xml`, two `ImageView`s each holding one `renderDoublePanelBitmap` bitmap drawn at the row's pixel size, with the label block beside the value.
+- `VALUES`: no label, `barberfish_double_values.xml`, the same panel bitmaps side by side, the value allowed to grow past the cell's own value size.
+- `FIELD`: one slot left, drawn by `barberfishFieldRemoteViews` like a standalone cell.
+
+The panels are bitmaps rather than nested views so the row layout needs no runtime gravity or translation, which [crash on Karoo 2](sdk-findings.md#remoteviews-methods-that-crash-on-karoo-2).
+
 ---
 
 ## Data flow
