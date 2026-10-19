@@ -603,7 +603,7 @@ internal fun HUDSlotFieldCard(
             modifier = Modifier.fillMaxWidth().background(Grey200).padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            when (val f = slot.field) {
+            when (slot.field) {
                 HUDSlotField.Power -> HUDPowerCard(slot, onUpdate)
                 HUDSlotField.AvgPower -> {}
                 HUDSlotField.NP -> {}

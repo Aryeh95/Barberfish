@@ -218,6 +218,7 @@ import com.jpweytjens.barberfish.extension.streamUserProfile
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.UserProfile
 import io.hammerhead.karooext.models.ViewConfig
+import java.util.Locale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -2525,4 +2526,4 @@ internal fun CadenceThresholdControls(
     )
 }
 
-internal fun formatGradePct(d: Double) = "%.0f".format(d)
+internal fun formatGradePct(d: Double) = "%.0f".format(Locale.ROOT, d)

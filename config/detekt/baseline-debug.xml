@@ -1,0 +1,128 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:GradeMapProgress.kt:GradeMapProgress$routeKey == null || !onRoute || distanceToDestinationM == null || routeDistanceM &lt;= 0.0</ID>
+    <ID>ComplexCondition:HUDConfigSection.kt:boxWidthPx &lt;= 0 || boxHeightPx &lt;= 0 || !reveal.visible || reveal.counterText != null || !spaceReserved</ID>
+    <ID>CyclomaticComplexMethod:AvgSpeedField.kt:internal fun avgSpeedFieldState: FieldState</ID>
+    <ID>CyclomaticComplexMethod:BarberfishExtension.kt:BarberfishExtension$override fun startMap</ID>
+    <ID>CyclomaticComplexMethod:BitmapValue.kt:fun renderTwoRowValueBitmap: Bitmap</ID>
+    <ID>CyclomaticComplexMethod:CadenceField.kt:internal fun cadenceFieldColor: FieldColor</ID>
+    <ID>CyclomaticComplexMethod:ElevationSparkline.kt:internal fun renderElevationSparkline: ElevationSparklineResult</ID>
+    <ID>CyclomaticComplexMethod:ElevationSparkline.kt:private fun vwSimplify: List&lt;Pair&lt;Float, Float&gt;&gt;</ID>
+    <ID>CyclomaticComplexMethod:FieldColors.kt:internal fun FieldColor.toColorConfig: ColorConfig</ID>
+    <ID>CyclomaticComplexMethod:GradeBandSelector.kt:@Composable internal fun GradeBandSlider</ID>
+    <ID>CyclomaticComplexMethod:GradeBands.kt:private fun gradeThresholdColors: List&lt;Pair&lt;Double, Color&gt;&gt;</ID>
+    <ID>CyclomaticComplexMethod:GradeSmoother.kt:GradeSmoother$fun update: Float?</ID>
+    <ID>CyclomaticComplexMethod:HUDConfigSection.kt:@Composable internal fun SparklinePreview</ID>
+    <ID>CyclomaticComplexMethod:HUDConfigSection.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable internal fun HUDConfigSection</ID>
+    <ID>CyclomaticComplexMethod:HUDConfigSection.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable internal fun HUDSlotFieldCard</ID>
+    <ID>CyclomaticComplexMethod:HUDConfigSection.kt:internal fun HUDSlotField.displayName: String</ID>
+    <ID>CyclomaticComplexMethod:HUDField.kt:HUDField$@OptIn(FlowPreview::class) override fun startView</ID>
+    <ID>CyclomaticComplexMethod:HUDSlotSource.kt:HUDSlotSource$fun liveFlow: Flow&lt;FieldState&gt;</ID>
+    <ID>CyclomaticComplexMethod:HUDSlotSource.kt:HUDSlotSource.Companion$fun previewStates: List&lt;FieldState&gt;</ID>
+    <ID>CyclomaticComplexMethod:MainActivity.kt:MainActivity$@OptIn(ExperimentalComposeUiApi::class) @Composable private fun ConfigScreen</ID>
+    <ID>CyclomaticComplexMethod:OverviewSparkline.kt:@OptIn(FlowPreview::class) fun overviewBitmapFlow: Flow&lt;Bitmap?&gt;</ID>
+    <ID>CyclomaticComplexMethod:SparklineDataFlow.kt:@OptIn(FlowPreview::class) internal fun sparklineBitmapFlow: Flow&lt;SparklineFrame&gt;</ID>
+    <ID>CyclomaticComplexMethod:ViewSizeConfig.kt:fun ViewConfig.toViewSizeConfig: ViewSizeConfig</ID>
+    <ID>CyclomaticComplexMethod:ZoneColoring.kt:fun hrZoneColor: Color</ID>
+    <ID>CyclomaticComplexMethod:ZoneColoring.kt:fun powerZoneColor: Color</ID>
+    <ID>LargeClass:MainActivity.kt:MainActivity : ComponentActivity</ID>
+    <ID>LongMethod:BarberfishExtension.kt:BarberfishExtension$override fun startMap</ID>
+    <ID>LongMethod:BarberfishView.kt:private fun applyHeaderChrome: Int</ID>
+    <ID>LongMethod:ETAField.kt:ETAField.Companion$fun streamFlow: Flow&lt;FieldState&gt;</ID>
+    <ID>LongMethod:ElevationSparkline.kt:internal fun colDeRatesElevationFixture: List&lt;Pair&lt;Float, Float&gt;&gt;</ID>
+    <ID>LongMethod:ElevationSparkline.kt:internal fun renderElevationSparkline: ElevationSparklineResult</ID>
+    <ID>LongMethod:ElevationSparkline.kt:internal fun rvvElevationFixture: List&lt;Pair&lt;Float, Float&gt;&gt;</ID>
+    <ID>LongMethod:GradeBandSelector.kt:@Composable internal fun GradeBandSlider</ID>
+    <ID>LongMethod:GradeMapPreview.kt:private fun DrawScope.drawSyntheticMap</ID>
+    <ID>LongMethod:HUDConfigSection.kt:@Composable internal fun SparklineCard</ID>
+    <ID>LongMethod:HUDConfigSection.kt:@Composable internal fun SparklineOptionsControls</ID>
+    <ID>LongMethod:HUDConfigSection.kt:@Composable internal fun SparklinePreview</ID>
+    <ID>LongMethod:HUDConfigSection.kt:@Composable private fun HUDPreview</ID>
+    <ID>LongMethod:HUDConfigSection.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable internal fun HUDConfigSection</ID>
+    <ID>LongMethod:HUDConfigSection.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable internal fun HUDSlotFieldCard</ID>
+    <ID>LongMethod:HUDConfigSection.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable private fun HUDFieldTypeDropdown</ID>
+    <ID>LongMethod:HUDField.kt:HUDField$@OptIn(FlowPreview::class) override fun startView</ID>
+    <ID>LongMethod:HUDSlotSource.kt:HUDSlotSource$fun liveFlow: Flow&lt;FieldState&gt;</ID>
+    <ID>LongMethod:HUDSlotSource.kt:HUDSlotSource.Companion$fun previewStates: List&lt;FieldState&gt;</ID>
+    <ID>LongMethod:MainActivity.kt:@Composable internal fun &lt;T&gt; SmoothingSlider</ID>
+    <ID>LongMethod:MainActivity.kt:@Composable internal fun CollapsibleSection</ID>
+    <ID>LongMethod:MainActivity.kt:@Composable internal fun GradeMapCard</ID>
+    <ID>LongMethod:MainActivity.kt:MainActivity$@OptIn(ExperimentalComposeUiApi::class) @Composable private fun ConfigScreen</ID>
+    <ID>LongMethod:OverviewSparkline.kt:@OptIn(FlowPreview::class) fun overviewBitmapFlow: Flow&lt;Bitmap?&gt;</ID>
+    <ID>LongMethod:SparklineDataFlow.kt:@OptIn(FlowPreview::class) internal fun sparklineBitmapFlow: Flow&lt;SparklineFrame&gt;</ID>
+    <ID>LongMethod:ViewSizeConfig.kt:fun ViewConfig.toViewSizeConfig: ViewSizeConfig</ID>
+    <ID>LongParameterList:AvgHRField.kt:AvgHRField.Companion$fun previewStates: List&lt;FieldState&gt;</ID>
+    <ID>LongParameterList:AvgHRField.kt:AvgHRField.Companion$fun toFieldState: FieldState</ID>
+    <ID>LongParameterList:BarberfishView.kt:@Suppress("CyclomaticComplexMethod", "LongMethod") private fun makeFieldRemoteViews: RemoteViews</ID>
+    <ID>LongParameterList:BarberfishView.kt:fun applySparklineHeaderChrome</ID>
+    <ID>LongParameterList:BarberfishView.kt:fun barberfishFieldRemoteViews: RemoteViews</ID>
+    <ID>LongParameterList:BarberfishView.kt:private fun applyHeaderChrome: Int</ID>
+    <ID>LongParameterList:BitmapValue.kt:fun renderHeaderBitmap: Bitmap</ID>
+    <ID>LongParameterList:BitmapValue.kt:fun renderTwoRowValueBitmap: Bitmap</ID>
+    <ID>LongParameterList:BitmapValue.kt:fun renderValueBitmap: Bitmap</ID>
+    <ID>LongParameterList:ChevronPlacement.kt:internal fun placeChevronsByCadence: List&lt;ChevronPlacement&gt;</ID>
+    <ID>LongParameterList:DynamicFontSp.kt:fun fontSizeForCell: Pair&lt;Int, Int&gt;</ID>
+    <ID>LongParameterList:ElevationSparkline.kt:internal fun buildWarpedXMapper: (Float) -&gt; Float</ID>
+    <ID>LongParameterList:ElevationSparkline.kt:internal fun renderElevationSparkline: ElevationSparklineResult</ID>
+    <ID>LongParameterList:ElevationSparkline.kt:internal fun sparklineWindow: Pair&lt;Float, Float&gt;</ID>
+    <ID>LongParameterList:GradeBands.kt:internal fun gradeBandColor: Color</ID>
+    <ID>LongParameterList:GradeMapPolylines.kt:internal fun resampleRunsToCells: List&lt;GradeRun&gt;</ID>
+    <ID>LongParameterList:LapPowerField.kt:LapPowerField.Companion$fun toFieldState: FieldState</ID>
+    <ID>LongParameterList:OverviewSparkline.kt:fun renderOverviewSparkline: Bitmap?</ID>
+    <ID>LongParameterList:RejoinBand.kt:internal fun buildRejoinSpecs: RejoinSpecs</ID>
+    <ID>LongParameterList:SparklineDataFlow.kt:@OptIn(FlowPreview::class) internal fun sparklineBitmapFlow: Flow&lt;SparklineFrame&gt;</ID>
+    <ID>LongParameterList:SpeedField.kt:SpeedField.Companion$fun toFieldState: FieldState</ID>
+    <ID>LongParameterList:ValueField.kt:ValueKind</ID>
+    <ID>LongParameterList:ZoneFieldFlow.kt:@OptIn(ExperimentalCoroutinesApi::class) internal fun &lt;Cfg&gt; zoneFieldLiveFlow: Flow&lt;FieldState&gt;</ID>
+    <ID>LoopWithTooManyJumpStatements:ElevationSparkline.kt:for</ID>
+    <ID>LoopWithTooManyJumpStatements:ElevationSparkline.kt:while</ID>
+    <ID>MatchingDeclarationName:BarberfishView.kt:SparklineRender</ID>
+    <ID>MatchingDeclarationName:GpsPolyline.kt:LatLng</ID>
+    <ID>MatchingDeclarationName:GradeMapTuning.kt:EffectiveGradeMapTuning</ID>
+    <ID>MaxLineLength:BarberfishDataType.kt:BarberfishBase$"density=$density cellH=${cellHeightDp}dp cellW=${cellWidthPx}px textSize=${config.textSize}sp gridSize=${config.gridSize} typeId=$typeId"</ID>
+    <ID>MaxLineLength:BarberfishExtension.kt:BarberfishExtension$"grademap: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (blend=${inputs.chevronBlend} window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.tuning.simplification} climbEdge=${inputs.tuning.climbEdge} descentEdge=${inputs.tuning.descentEdge})"</ID>
+    <ID>MaxLineLength:BarberfishExtension.kt:BarberfishExtension$"grademap: direction name=${route.name} reversed=${route.reversed} gpsFirst=${gpsPts.firstOrNull()} gpsLast=${gpsPts.lastOrNull()} segStart=$segStart elevFirst=${elev.firstOrNull()?.second} elevLast=${elev.lastOrNull()?.second}"</ID>
+    <ID>MaxLineLength:BarberfishExtension.kt:BarberfishExtension$"grademap: progress held at ${it.toInt()}m (distanceToDestination=${event.distanceToDestinationM} onRoute=${event.onRoute} routeDist=${route.routeDistance.toInt()})"</ID>
+    <ID>MaxLineLength:BarberfishExtension.kt:BarberfishExtension$"grademap: routeDist=${route.routeDistance.toInt()}m rejoinDist=${route.rejoinDistance?.toInt()} reversed=${route.reversed} elevSpan=${elev.firstOrNull()?.first?.toInt()}..${elev.lastOrNull()?.first?.toInt()} climbs=${route.climbs.size} ranges=${climbRanges.map { "${it.first.toInt()}-${it.second.toInt()}" }}"</ID>
+    <ID>MaxLineLength:BarberfishExtension.kt:BarberfishExtension$"grademap: segment lengths (m) min=${segLen.firstOrNull()?.toInt()} median=${segLen.getOrNull(segLen.size / 2)?.toInt()} max=${segLen.lastOrNull()?.toInt()} &lt;collision=${segLen.count { it &lt; chevronCollision }}"</ID>
+    <ID>MaxLineLength:MainActivity.kt:MainActivity$"Initial average speed (${ConvertType.SPEED.unit(userProfile)}) used for ETA until enough ride data is collected. "</ID>
+    <ID>NestedBlockDepth:ElevationSparkline.kt:internal fun renderElevationSparkline: ElevationSparklineResult</ID>
+    <ID>ReturnCount:AvgHRField.kt:AvgHRField.Companion$fun toFieldState: FieldState</ID>
+    <ID>ReturnCount:AvgPowerField.kt:AvgPowerField.Companion$fun toFieldState: FieldState</ID>
+    <ID>ReturnCount:CadenceField.kt:CadenceField.Companion$fun toFieldState: FieldState</ID>
+    <ID>ReturnCount:ChevronPlacement.kt:internal fun placeChevronsByCadence: List&lt;ChevronPlacement&gt;</ID>
+    <ID>ReturnCount:DynamicFontSp.kt:fun fontSizeForCell: Pair&lt;Int, Int&gt;</ID>
+    <ID>ReturnCount:ETA.kt:fun computeRidingETA: Long</ID>
+    <ID>ReturnCount:ETAField.kt:ETAField.Companion$private fun extractDistToDest: Double?</ID>
+    <ID>ReturnCount:EffortField.kt:EffortField.Companion$private fun onRouteValue: Double?</ID>
+    <ID>ReturnCount:ElevationSparkline.kt:internal fun elevationAt: Float?</ID>
+    <ID>ReturnCount:ElevationSparkline.kt:internal fun renderElevationSparkline: ElevationSparklineResult</ID>
+    <ID>ReturnCount:GpsPolyline.kt:internal fun extractSubPolyline: List&lt;LatLng&gt;</ID>
+    <ID>ReturnCount:GpsPolyline.kt:internal fun interpolateAt: LatLng</ID>
+    <ID>ReturnCount:GradeBandSelector.kt:internal fun pressSide: Boolean?</ID>
+    <ID>ReturnCount:GradeBands.kt:internal fun gradeBandColor: Color</ID>
+    <ID>ReturnCount:GradeMapPolylines.kt:internal fun elevationAtM: Double</ID>
+    <ID>ReturnCount:GradeMapPreview.kt:private fun dropFromStart: List&lt;Offset&gt;</ID>
+    <ID>ReturnCount:GradeMapProgress.kt:GradeMapProgress$fun advance: Boolean</ID>
+    <ID>ReturnCount:GradeSmoother.kt:GradeSmoother$fun update: Float?</ID>
+    <ID>ReturnCount:HRField.kt:HRField.Companion$fun toFieldState: FieldState</ID>
+    <ID>ReturnCount:HRMaxPercentField.kt:HRMaxPercentField.Companion$fun toFieldState: FieldState</ID>
+    <ID>ReturnCount:HRZoneField.kt:HRZoneField.Companion$fun toFieldState: FieldState</ID>
+    <ID>ReturnCount:LapPowerField.kt:LapPowerField.Companion$fun toFieldState: FieldState</ID>
+    <ID>ReturnCount:MaxHRField.kt:MaxHRField.Companion$fun toFieldState: FieldState</ID>
+    <ID>ReturnCount:MaxPowerField.kt:MaxPowerField.Companion$fun toFieldState: FieldState</ID>
+    <ID>ReturnCount:NPField.kt:NPField.Companion$fun toFieldState: FieldState</ID>
+    <ID>ReturnCount:PowerField.kt:PowerField.Companion$fun toFieldState: FieldState</ID>
+    <ID>ReturnCount:PowerZoneField.kt:PowerZoneField.Companion$fun toFieldState: FieldState</ID>
+    <ID>ReturnCount:RejoinBand.kt:internal fun buildRejoinSpecs: RejoinSpecs</ID>
+    <ID>ReturnCount:SpeedField.kt:SpeedField.Companion$fun toFieldState: FieldState</ID>
+    <ID>ReturnCount:ValueField.kt:ValueField.Companion$fun toFieldState: FieldState</ID>
+    <ID>TooManyFunctions:ElevationSparkline.kt:com.jpweytjens.barberfish.datatype.shared.ElevationSparkline.kt</ID>
+    <ID>TooManyFunctions:HUDConfigSection.kt:com.jpweytjens.barberfish.screens.HUDConfigSection.kt</ID>
+    <ID>TooManyFunctions:MainActivity.kt:com.jpweytjens.barberfish.screens.MainActivity.kt</ID>
+    <ID>TooManyFunctions:Settings.kt:com.jpweytjens.barberfish.extension.Settings.kt</ID>
+    <ID>UnsafeCallOnNullableType:HeadwindStyleBitmap.kt:ContextCompat.getDrawable(context, res)!!</ID>
+  </CurrentIssues>
+</SmellBaseline>
