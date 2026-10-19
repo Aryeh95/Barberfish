@@ -47,7 +47,7 @@ import com.jpweytjens.barberfish.datatype.shared.windSpeedApplies
 import com.jpweytjens.barberfish.extension.DoubleFieldConfig
 import com.jpweytjens.barberfish.extension.DoubleFieldKind
 import com.jpweytjens.barberfish.extension.DoubleLabel
-import com.jpweytjens.barberfish.extension.DoubleOrientation
+import com.jpweytjens.barberfish.extension.FieldOrientation
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import io.hammerhead.karooext.models.UserProfile
@@ -129,7 +129,7 @@ private fun DoubleFieldCard(
     ) {
         ChoiceRow(
             label = "ORIENTATION",
-            options = DoubleOrientation.entries.map { it to it.label },
+            options = FieldOrientation.entries.map { it to it.label },
             selected = config.orientation,
             onSelect = { onUpdate(config.copy(orientation = it)) },
             help = "Side by side, or one above the other.",
@@ -212,8 +212,8 @@ private fun DoubleThumbnail(
 private fun DoubleFieldConfig.summary(): String {
     val arrangement =
         when (orientation) {
-            DoubleOrientation.HORIZONTAL -> "side by side"
-            DoubleOrientation.VERTICAL -> "stacked"
+            FieldOrientation.HORIZONTAL -> "side by side"
+            FieldOrientation.VERTICAL -> "stacked"
         }
     return "${first.field.displayName()} and ${second.field.displayName()}, $arrangement."
 }
@@ -301,7 +301,7 @@ private fun rememberDoubleBitmap(state: DoubleState): Bitmap {
 /** The two tap targets over the preview, laid out as [orientation] lays out the values. */
 @Composable
 private fun DoubleSlotTargets(
-    orientation: DoubleOrientation,
+    orientation: FieldOrientation,
     selectedSlot: Int?,
     onSlotSelected: (Int) -> Unit,
 ) {
@@ -322,7 +322,7 @@ private fun DoubleSlotTargets(
                 )
         )
     }
-    if (orientation == DoubleOrientation.HORIZONTAL) {
+    if (orientation == FieldOrientation.HORIZONTAL) {
         Row(Modifier.fillMaxSize()) {
             Target(0, Modifier.weight(1f).fillMaxSize())
             Target(1, Modifier.weight(1f).fillMaxSize())

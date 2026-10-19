@@ -2,13 +2,13 @@ package com.jpweytjens.barberfish.datatype.shared
 
 import com.jpweytjens.barberfish.extension.DoubleFieldConfig
 import com.jpweytjens.barberfish.extension.DoubleLabel
-import com.jpweytjens.barberfish.extension.DoubleOrientation
+import com.jpweytjens.barberfish.extension.FieldOrientation
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 
 data class DoubleState(
     val first: SlotState,
     val second: SlotState,
-    val orientation: DoubleOrientation,
+    val orientation: FieldOrientation,
     val label: DoubleLabel,
 )
 
@@ -37,10 +37,10 @@ enum class DoubleLayout {
 fun DoubleState.layout(): DoubleLayout {
     val visible = visibleSlots(slots).size
     return when {
-        label == DoubleLabel.NONE &&
-            (visible == 1 || orientation == DoubleOrientation.HORIZONTAL) -> DoubleLayout.VALUES
+        label == DoubleLabel.NONE && (visible == 1 || orientation == FieldOrientation.HORIZONTAL) ->
+            DoubleLayout.VALUES
         visible == 1 -> DoubleLayout.FIELD
-        orientation == DoubleOrientation.HORIZONTAL -> DoubleLayout.FIELDS
+        orientation == FieldOrientation.HORIZONTAL -> DoubleLayout.FIELDS
         else -> DoubleLayout.ROWS
     }
 }
@@ -59,7 +59,7 @@ fun FieldState.withDoubleLabel(label: DoubleLabel): FieldState =
  * rows and label-free values draw the wind arrow and number alone.
  */
 val DoubleFieldConfig.windSpeedApplies: Boolean
-    get() = orientation == DoubleOrientation.HORIZONTAL && label != DoubleLabel.NONE
+    get() = orientation == FieldOrientation.HORIZONTAL && label != DoubleLabel.NONE
 
 /**
  * [slot] as this Double draws it: Show speed off where it does not apply (see [windSpeedApplies]).

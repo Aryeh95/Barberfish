@@ -64,7 +64,7 @@ of its own, as do the [Double fields](double-fields.md) and
     <tr><td>Distance Remaining</td><td></td><td></td><td></td><td></td></tr>
     <tr><td>Ascent Remaining</td><td></td><td></td><td></td><td></td></tr>
     <tr><td>Descent Remaining</td><td></td><td></td><td></td><td></td></tr>
-    <tr><td>Ride Remaining</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>Ride Remaining</td><td></td><td></td><td>Stacked / Side by side</td><td></td></tr>
     <tr><td>Overview</td><td></td><td></td><td></td><td></td></tr>
     <tr><th colspan="5" align="center">Time</th></tr>
     <tr><td>Elapsed</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
@@ -96,6 +96,8 @@ Duration fields (time, ETA, daylight) use one of three formats, all unambiguous 
 | Racing   | `23'45"`      | `1h23'45"`   |
 | Clock    | `0:23:45`     | `1:23:45`    |
 | Segments | `23m45s`      | `1h23m45s`   |
+
+Ride Remaining shows the distance and ascent left one above the other, or side by side with Orientation set to Horizontal in its card, in either order.
 
 Power Zone and HR Zone toggle between integer (`3`) and one-decimal float (`3.4`) display per field.
 

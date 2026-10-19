@@ -10,6 +10,7 @@ import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.TextUtils
+import androidx.core.graphics.createBitmap
 import io.hammerhead.karooext.models.ViewConfig
 import kotlin.math.roundToInt
 
@@ -147,6 +148,91 @@ fun renderTwoRowValueBitmap(
     }
     drawRow(row1, 0f, row1Icon)
     drawRow(row2, bandPx + rowGapPx, row2Icon)
+    return bitmap
+}
+
+// Share of the value height a digit fills when two values sit side by side, as tall as the
+// single value they replace.
+private const val SIDE_BY_SIDE_DIGIT_FILL = 0.92f
+
+// Gap between the two side-by-side values, and between an icon and its number, in ems.
+private const val SIDE_BY_SIDE_GAP_EM = 0.45f
+private const val SIDE_BY_SIDE_ICON_GAP_EM = 0.12f
+
+/** Two values drawn side by side, each with an optional pre-tinted leading icon. */
+data class SideBySideValues(
+    val first: String,
+    val second: String,
+    val firstIcon: Bitmap? = null,
+    val secondIcon: Bitmap? = null,
+)
+
+/**
+ * Render two values side by side into one value-height bitmap, the horizontal counterpart of
+ * [renderTwoRowValueBitmap]: each as [icon][gap][number] (the [ASCENT_MARKER] glyph stripped, the
+ * icon replacing it), the pair aligned to the field edge per [alignment] and vertically centred.
+ * The font fills the height like a single value and shrinks so the pair fits [cellWidthPx].
+ */
+fun renderSideBySideValueBitmap(
+    values: SideBySideValues,
+    bitmapHeightPx: Int,
+    cellWidthPx: Float,
+    color: Int,
+    alignment: ViewConfig.Alignment,
+): Bitmap {
+    val width = cellWidthPx.toInt().coerceAtLeast(1)
+    val paint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = Typeface.create("relative", Typeface.NORMAL)
+            this.color = color
+            letterSpacing = LETTER_SPACING
+            textAlign = Paint.Align.LEFT
+            textSize = 100f
+        }
+    val zero = Rect()
+    paint.getTextBounds("0", 0, 1, zero)
+    paint.textSize =
+        if (zero.height() > 0) 100f * bitmapHeightPx * SIDE_BY_SIDE_DIGIT_FILL / zero.height()
+        else bitmapHeightPx.toFloat()
+    val numbers = listOf(values.first, values.second).map { it.removePrefix(ASCENT_MARKER) }
+    val icons = listOf(values.firstIcon, values.secondIcon)
+    fun totalWidth(): Float {
+        paint.getTextBounds("0", 0, 1, zero)
+        val icon = zero.height() * 1.1f
+        val units =
+            numbers.indices.sumOf { i ->
+                val iconW =
+                    if (icons[i] != null) icon + paint.textSize * SIDE_BY_SIDE_ICON_GAP_EM else 0f
+                (iconW + paint.measureText(numbers[i])).toDouble()
+            }
+        return units.toFloat() + paint.textSize * SIDE_BY_SIDE_GAP_EM
+    }
+    val needed = totalWidth()
+    if (needed > width) paint.textSize *= width / needed
+    paint.getTextBounds("0", 0, 1, zero)
+    val iconSize = zero.height() * 1.1f
+    val centre = bitmapHeightPx / 2f
+    val baseline = centre - (zero.top + zero.bottom) / 2f
+    val total = totalWidth()
+    var x =
+        when (alignment) {
+            ViewConfig.Alignment.LEFT -> 0f
+            ViewConfig.Alignment.CENTER -> (width - total) / 2f
+            ViewConfig.Alignment.RIGHT -> width - total
+        }
+    val bitmap = createBitmap(width, bitmapHeightPx)
+    bitmap.density = Bitmap.DENSITY_NONE
+    val canvas = Canvas(bitmap)
+    val iconPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { isFilterBitmap = true }
+    numbers.forEachIndexed { i, number ->
+        icons[i]?.let { icon ->
+            val top = centre - iconSize / 2f
+            canvas.drawBitmap(icon, null, RectF(x, top, x + iconSize, top + iconSize), iconPaint)
+            x += iconSize + paint.textSize * SIDE_BY_SIDE_ICON_GAP_EM
+        }
+        canvas.drawText(number, x, baseline, paint)
+        x += paint.measureText(number) + paint.textSize * SIDE_BY_SIDE_GAP_EM
+    }
     return bitmap
 }
 

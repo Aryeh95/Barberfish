@@ -46,7 +46,7 @@ import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.DoubleFieldConfig
 import com.jpweytjens.barberfish.extension.DoubleFieldKind
 import com.jpweytjens.barberfish.extension.DoubleLabel
-import com.jpweytjens.barberfish.extension.DoubleOrientation
+import com.jpweytjens.barberfish.extension.FieldOrientation
 import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.HUDConfig
@@ -318,7 +318,7 @@ class ConfigShotsRenderTest {
 
     // Double 1 open with its first value selected, so the card shows the preview and the slot's
     // options; Double 2 stacked with icons and the rest at their defaults, all closed.
-    private fun doubleShot(name: String, orientation: DoubleOrientation, label: DoubleLabel) {
+    private fun doubleShot(name: String, orientation: FieldOrientation, label: DoubleLabel) {
         val scrollState = ScrollState(0)
         setShotContent(scrollable = true, scrollState = scrollState) {
             var configs by remember {
@@ -339,7 +339,7 @@ class ConfigShotsRenderTest {
                             DoubleFieldKind(2)
                                 .default
                                 .copy(
-                                    orientation = DoubleOrientation.VERTICAL,
+                                    orientation = FieldOrientation.VERTICAL,
                                     label = DoubleLabel.ICON,
                                 ))
                 )
@@ -364,11 +364,11 @@ class ConfigShotsRenderTest {
     }
 
     @Test
-    fun doubleConfig() = doubleShot("double_config", DoubleOrientation.HORIZONTAL, DoubleLabel.BOTH)
+    fun doubleConfig() = doubleShot("double_config", FieldOrientation.HORIZONTAL, DoubleLabel.BOTH)
 
     @Test
     fun doubleStackedConfig() =
-        doubleShot("double_config_stacked", DoubleOrientation.VERTICAL, DoubleLabel.HEADER)
+        doubleShot("double_config_stacked", FieldOrientation.VERTICAL, DoubleLabel.HEADER)
 
     // The Wind column selected, with and without Show speed, so its slot card shows the switch.
     private fun windShot(

@@ -16,12 +16,14 @@ import com.jpweytjens.barberfish.datatype.shared.ASCENT_MARKER
 import com.jpweytjens.barberfish.datatype.shared.ColorConfig
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.SideBySideValues
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.WIND_ARROW_GAP_DP
 import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
 import com.jpweytjens.barberfish.datatype.shared.headerHeightPx
 import com.jpweytjens.barberfish.datatype.shared.hideFieldHeader
 import com.jpweytjens.barberfish.datatype.shared.renderHeaderBitmap
+import com.jpweytjens.barberfish.datatype.shared.renderSideBySideValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderTwoRowValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderWindArrowValueBitmap
@@ -328,16 +330,30 @@ private fun makeFieldRemoteViews(
             val arrowGlyph = glyph(R.drawable.ic_arrow_outward)
             val routeGlyph = glyph(R.drawable.ic_route)
             val primaryIsClimb = field.primary.startsWith(ASCENT_MARKER)
-            renderTwoRowValueBitmap(
-                row1 = valueText,
-                row2 = field.secondary.replace(',', '.'),
-                bitmapHeightPx = bitmapHeightPx,
-                cellWidthPx = cellWidthPx,
-                color = tint,
-                alignment = alignment,
-                row1Icon = if (primaryIsClimb) arrowGlyph else routeGlyph,
-                row2Icon = if (primaryIsClimb) routeGlyph else arrowGlyph,
-            )
+            if (field.secondaryBeside) {
+                renderSideBySideValueBitmap(
+                    SideBySideValues(
+                        first = valueText,
+                        second = field.secondary.replace(',', '.'),
+                        firstIcon = if (primaryIsClimb) arrowGlyph else routeGlyph,
+                        secondIcon = if (primaryIsClimb) routeGlyph else arrowGlyph,
+                    ),
+                    bitmapHeightPx = bitmapHeightPx,
+                    cellWidthPx = cellWidthPx,
+                    color = tint,
+                    alignment = alignment,
+                )
+            } else
+                renderTwoRowValueBitmap(
+                    row1 = valueText,
+                    row2 = field.secondary.replace(',', '.'),
+                    bitmapHeightPx = bitmapHeightPx,
+                    cellWidthPx = cellWidthPx,
+                    color = tint,
+                    alignment = alignment,
+                    row1Icon = if (primaryIsClimb) arrowGlyph else routeGlyph,
+                    row2Icon = if (primaryIsClimb) routeGlyph else arrowGlyph,
+                )
         } else {
             renderValueBitmap(
                 text = valueText,

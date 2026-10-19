@@ -21,7 +21,7 @@ import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.DoubleFieldConfig
 import com.jpweytjens.barberfish.extension.DoubleFieldKind
 import com.jpweytjens.barberfish.extension.DoubleLabel
-import com.jpweytjens.barberfish.extension.DoubleOrientation
+import com.jpweytjens.barberfish.extension.FieldOrientation
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
@@ -69,7 +69,7 @@ class DoubleFieldTest {
     private fun double(
         first: SlotState,
         second: SlotState,
-        orientation: DoubleOrientation = DoubleOrientation.HORIZONTAL,
+        orientation: FieldOrientation = FieldOrientation.HORIZONTAL,
         label: DoubleLabel = DoubleLabel.BOTH,
     ) = DoubleState(first, second, orientation, label)
 
@@ -91,7 +91,7 @@ class DoubleFieldTest {
         assertEquals(DoubleLayout.FIELD, double(unpaired, live).layout())
         assertEquals(
             DoubleLayout.FIELD,
-            double(live, unpaired, DoubleOrientation.VERTICAL).layout(),
+            double(live, unpaired, FieldOrientation.VERTICAL).layout(),
         )
     }
 
@@ -105,19 +105,19 @@ class DoubleFieldTest {
     @Test
     fun `orientation and label pick the layout`() {
         assertEquals(DoubleLayout.FIELDS, double(live, live).layout())
-        assertEquals(DoubleLayout.ROWS, double(live, live, DoubleOrientation.VERTICAL).layout())
+        assertEquals(DoubleLayout.ROWS, double(live, live, FieldOrientation.VERTICAL).layout())
         assertEquals(
             DoubleLayout.ROWS,
-            double(live, live, DoubleOrientation.VERTICAL, DoubleLabel.NONE).layout(),
+            double(live, live, FieldOrientation.VERTICAL, DoubleLabel.NONE).layout(),
         )
         assertEquals(
             DoubleLayout.VALUES,
-            double(live, live, DoubleOrientation.HORIZONTAL, DoubleLabel.NONE).layout(),
+            double(live, live, FieldOrientation.HORIZONTAL, DoubleLabel.NONE).layout(),
         )
         // One slot left with no label: the value alone fills the cell.
         assertEquals(
             DoubleLayout.VALUES,
-            double(live, unpaired, DoubleOrientation.VERTICAL, DoubleLabel.NONE).layout(),
+            double(live, unpaired, FieldOrientation.VERTICAL, DoubleLabel.NONE).layout(),
         )
     }
 
@@ -202,7 +202,7 @@ class DoubleFieldTest {
         assertEquals(kinds.size, kinds.map { it.default }.toSet().size)
         assertTrue(
             kinds.all {
-                it.default.orientation == DoubleOrientation.HORIZONTAL &&
+                it.default.orientation == FieldOrientation.HORIZONTAL &&
                     it.default.label == DoubleLabel.BOTH
             }
         )
@@ -222,7 +222,7 @@ class DoubleFieldTest {
                         field = HUDSlotField.Power,
                         powerSmoothing = PowerSmoothingStream.S10,
                     ),
-                orientation = DoubleOrientation.VERTICAL,
+                orientation = FieldOrientation.VERTICAL,
                 label = DoubleLabel.ICON,
             )
         val stored = json.encodeToString(DoubleFieldConfig.serializer(), config)
@@ -267,12 +267,12 @@ class DoubleFieldTest {
 
     @Test
     fun `wind show speed applies only side by side with a label`() {
-        for (orientation in DoubleOrientation.entries) {
+        for (orientation in FieldOrientation.entries) {
             for (label in DoubleLabel.entries) {
                 val config = DoubleFieldConfig(orientation = orientation, label = label)
                 assertEquals(
                     "$orientation $label",
-                    orientation == DoubleOrientation.HORIZONTAL && label != DoubleLabel.NONE,
+                    orientation == FieldOrientation.HORIZONTAL && label != DoubleLabel.NONE,
                     config.windSpeedApplies,
                 )
             }
@@ -288,7 +288,7 @@ class DoubleFieldTest {
                 windLayout = WindLayout.HEADWIND,
             )
         val stacked =
-            DoubleFieldConfig(first = wind, second = wind, orientation = DoubleOrientation.VERTICAL)
+            DoubleFieldConfig(first = wind, second = wind, orientation = FieldOrientation.VERTICAL)
         assertFalse(stacked.effectiveSlot(wind).windShowSpeed)
         assertEquals(WindLayout.HEADWIND, stacked.effectiveSlot(wind).windLayout)
         assertTrue(stacked.first.windShowSpeed)
@@ -296,7 +296,7 @@ class DoubleFieldTest {
         assertTrue(
             previews.all { !it.first.field.headwindLayout && it.first.field.speedRow == null }
         )
-        val sideBySide = stacked.copy(orientation = DoubleOrientation.HORIZONTAL)
+        val sideBySide = stacked.copy(orientation = FieldOrientation.HORIZONTAL)
         assertTrue(sideBySide.effectiveSlot(wind).windShowSpeed)
         val noLabel = sideBySide.copy(label = DoubleLabel.NONE)
         assertFalse(noLabel.effectiveSlot(wind).windShowSpeed)

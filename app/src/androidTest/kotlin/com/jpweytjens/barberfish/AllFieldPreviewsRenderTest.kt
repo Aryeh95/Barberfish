@@ -25,7 +25,7 @@ import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
 import com.jpweytjens.barberfish.datatype.sparklineImageSize
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.DoubleLabel
-import com.jpweytjens.barberfish.extension.DoubleOrientation
+import com.jpweytjens.barberfish.extension.FieldOrientation
 import com.jpweytjens.barberfish.extension.RouteRemainingConfig
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
@@ -132,7 +132,7 @@ class AllFieldPreviewsRenderTest {
             val double = types.filterIsInstance<DoubleField>().first()
             val doubleState = samples.first { it.type === double }.state as DoubleState
             val fiveRow = cellConfig.copy(gridSize = 30 to 12, viewSize = 240 to 126, textSize = 46)
-            for (orientation in DoubleOrientation.entries) {
+            for (orientation in FieldOrientation.entries) {
                 for (label in DoubleLabel.entries) {
                     val state = doubleState.copy(orientation = orientation, label = label)
                     val name = "double-${orientation.name.lowercase()}-${label.name.lowercase()}"

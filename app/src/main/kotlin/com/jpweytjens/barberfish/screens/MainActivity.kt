@@ -153,6 +153,7 @@ import com.jpweytjens.barberfish.extension.DoubleFieldKind
 import com.jpweytjens.barberfish.extension.ETAConfig
 import com.jpweytjens.barberfish.extension.EffortFieldConfig
 import com.jpweytjens.barberfish.extension.ElevationSimplification
+import com.jpweytjens.barberfish.extension.FieldOrientation
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
 import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.GradePalette
@@ -571,7 +572,7 @@ class MainActivity : ComponentActivity() {
                         }
                     val effortPreviewStates =
                         remember(effortFieldConfig, userProfile) {
-                            EffortField.previewStates(userProfile, effortFieldConfig.climbFirst)
+                            EffortField.previewStates(userProfile, effortFieldConfig)
                         }
 
                     CollapsibleSection(
@@ -1252,7 +1253,7 @@ class MainActivity : ComponentActivity() {
                         FieldCard(
                             title = "RIDE REMAINING",
                             typeId = "remaining-effort",
-                            description = "Distance and ascent remaining, stacked.",
+                            description = "Distance and ascent remaining, stacked or side by side.",
                             previewFields = effortPreviewStates,
                             colorMode = ZoneColorMode.NONE,
                             selected = selectedDataField == "RIDE REMAINING",
@@ -1263,7 +1264,19 @@ class MainActivity : ComponentActivity() {
                             },
                         ) {
                             ChoiceRow(
-                                label = "STACK ORDER",
+                                label = "ORIENTATION",
+                                options = FieldOrientation.entries.map { it to it.label },
+                                selected = effortFieldConfig.orientation,
+                                onSelect = {
+                                    effortFieldConfig = effortFieldConfig.copy(orientation = it)
+                                    lifecycleScope.launch {
+                                        saveEffortFieldConfig(effortFieldConfig)
+                                    }
+                                },
+                                help = "One above the other, or side by side.",
+                            )
+                            ChoiceRow(
+                                label = "ORDER",
                                 options = STACK_ORDER_OPTIONS,
                                 selected = effortFieldConfig.climbFirst,
                                 onSelect = {

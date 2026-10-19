@@ -153,8 +153,9 @@ data class HUDSlotConfig(
 // The three Double fields: two HUD slot configs in one Karoo cell, side by side or stacked. Each
 // Double has its own key; the slots keep every option they have in the HUD.
 
+/** How a field lays out two values: side by side, or one above the other. */
 @Serializable
-enum class DoubleOrientation(val label: String) {
+enum class FieldOrientation(val label: String) {
     HORIZONTAL("Horizontal"),
     VERTICAL("Vertical"),
 }
@@ -179,7 +180,7 @@ data class DoubleFieldConfig(
     // Left when horizontal, top when vertical.
     val first: HUDSlotConfig = HUDSlotConfig(field = HUDSlotField.Power),
     val second: HUDSlotConfig = HUDSlotConfig(field = HUDSlotField.HR),
-    val orientation: DoubleOrientation = DoubleOrientation.HORIZONTAL,
+    val orientation: FieldOrientation = FieldOrientation.HORIZONTAL,
     val label: DoubleLabel = DoubleLabel.BOTH,
 )
 
@@ -752,7 +753,12 @@ suspend fun Context.saveNPFieldConfig(config: NPFieldConfig) = saveConfig(npFiel
 
 // --- EffortFieldConfig ---
 
-@Serializable data class EffortFieldConfig(val climbFirst: Boolean = false)
+@Serializable
+data class EffortFieldConfig(
+    val climbFirst: Boolean = false,
+    // Distance and ascent one above the other (as before the setting existed) or side by side.
+    val orientation: FieldOrientation = FieldOrientation.VERTICAL,
+)
 
 private val effortFieldConfigKey = stringPreferencesKey("remaining_effort_field_config")
 
