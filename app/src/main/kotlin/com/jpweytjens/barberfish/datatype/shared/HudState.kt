@@ -19,11 +19,17 @@ val HUDState.slots: List<SlotState>
     get() = listOf(left, middle, right, fourth).take(columns)
 
 /**
- * Column indices the strip renders: every configured slot except those whose sensor is not paired
- * ([FieldState.noSensor]). When no slot is paired nothing is dropped, so the strip shows its
+ * Column indices the strip renders: every configured slot except those whose sensor is not paired.
+ * See [visibleSlots].
+ */
+fun HUDState.visibleColumns(): List<Int> = visibleSlots(slots)
+
+/**
+ * Indices of [slots] a multi-slot field renders: every slot except those whose sensor is not paired
+ * ([FieldState.noSensor]). When no slot is paired nothing is dropped, so the field shows its
  * placeholders instead of rendering empty.
  */
-fun HUDState.visibleColumns(): List<Int> {
+fun visibleSlots(slots: List<SlotState>): List<Int> {
     val paired = slots.indices.filterNot { slots[it].field.noSensor }
     return paired.ifEmpty { slots.indices.toList() }
 }
