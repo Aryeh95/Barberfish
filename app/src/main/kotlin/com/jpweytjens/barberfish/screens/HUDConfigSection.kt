@@ -583,6 +583,9 @@ internal fun HUDSlotFieldCard(
     slot: HUDSlotConfig,
     profile: UserProfile,
     onUpdate: (HUDSlotConfig) -> Unit,
+    // False where the slot's host draws the wind without the ride speed (a stacked or label-free
+    // Double): the Wind slot's Show speed options are hidden, their stored values kept.
+    windSpeedApplies: Boolean = true,
 ) {
     Column(
         modifier =
@@ -632,7 +635,9 @@ internal fun HUDSlotFieldCard(
                         onConfigChange = { onUpdate(slot.copy(cadenceThreshold = it)) },
                     )
                 HUDSlotField.Grade -> HUDGradeCard(slot, onUpdate)
-                HUDSlotField.Wind -> HUDWindCard(slot, onUpdate)
+                HUDSlotField.Wind ->
+                    if (windSpeedApplies) HUDWindCard(slot, onUpdate)
+                    else HelperText("Show speed works when the Double is horizontal with a label.")
                 HUDSlotField.Distance -> {}
                 HUDSlotField.DistanceRemaining -> {}
                 HUDSlotField.ElevationRemaining -> {}

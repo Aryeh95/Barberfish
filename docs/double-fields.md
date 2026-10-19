@@ -8,6 +8,8 @@ Out of the box Double 1 shows Power and HR, Double 2 Speed and Cadence, and Doub
 
 Each half of a Double is a [HUD slot](hud.md#slots): it can hold any field a HUD column can, from 3s Power to Last Lap Avg Cadence, with the same smoothing, zone coloring, threshold and format options, kept per Double. In the Double fields section of the Barberfish app, open a Double's card and tap a value in its preview to pick its field and set its options.
 
+The one exception is the Wind slot's Show speed, with its layout, header and speed smoothing: it needs the room of a side-by-side Double with a label, so a stacked or label-free Double draws the wind arrow and number alone and its card hides those options. They are kept, and come back when the Double is switched to horizontal with a label.
+
 ## Layout
 
 Orientation sets how the two values share the cell:

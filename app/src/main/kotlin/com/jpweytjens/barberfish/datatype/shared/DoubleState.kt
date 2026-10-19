@@ -1,7 +1,9 @@
 package com.jpweytjens.barberfish.datatype.shared
 
+import com.jpweytjens.barberfish.extension.DoubleFieldConfig
 import com.jpweytjens.barberfish.extension.DoubleLabel
 import com.jpweytjens.barberfish.extension.DoubleOrientation
+import com.jpweytjens.barberfish.extension.HUDSlotConfig
 
 data class DoubleState(
     val first: SlotState,
@@ -50,3 +52,18 @@ fun DoubleState.layout(): DoubleLayout {
  */
 fun FieldState.withDoubleLabel(label: DoubleLabel): FieldState =
     if (label == DoubleLabel.ICON) copy(label = "") else this
+
+/**
+ * Whether this Double draws its slots as field layouts, side by side with a label, the only layout
+ * the Wind slot's Show speed (and with it its layout, header and speed smoothing) works in. Stacked
+ * rows and label-free values draw the wind arrow and number alone.
+ */
+val DoubleFieldConfig.windSpeedApplies: Boolean
+    get() = orientation == DoubleOrientation.HORIZONTAL && label != DoubleLabel.NONE
+
+/**
+ * [slot] as this Double draws it: Show speed off where it does not apply (see [windSpeedApplies]).
+ * The stored option is kept, so it comes back when the Double is switched to a layout that has it.
+ */
+fun DoubleFieldConfig.effectiveSlot(slot: HUDSlotConfig): HUDSlotConfig =
+    if (windSpeedApplies || !slot.windShowSpeed) slot else slot.copy(windShowSpeed = false)

@@ -39,6 +39,7 @@ import com.jpweytjens.barberfish.datatype.shared.BarberfishYellow
 import com.jpweytjens.barberfish.datatype.shared.DoubleState
 import com.jpweytjens.barberfish.datatype.shared.PREVIEW_DELAY_MS
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
+import com.jpweytjens.barberfish.datatype.shared.windSpeedApplies
 import com.jpweytjens.barberfish.extension.DoubleFieldConfig
 import com.jpweytjens.barberfish.extension.DoubleFieldKind
 import com.jpweytjens.barberfish.extension.DoubleLabel
@@ -143,12 +144,14 @@ private fun DoubleFieldCard(
                     slot = config.first,
                     profile = profile,
                     onUpdate = { onUpdate(config.copy(first = it)) },
+                    windSpeedApplies = config.windSpeedApplies,
                 )
             1 ->
                 HUDSlotFieldCard(
                     slot = config.second,
                     profile = profile,
                     onUpdate = { onUpdate(config.copy(second = it)) },
+                    windSpeedApplies = config.windSpeedApplies,
                 )
         }
     }

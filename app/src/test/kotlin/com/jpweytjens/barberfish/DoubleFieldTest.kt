@@ -10,10 +10,12 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.SlotState
 import com.jpweytjens.barberfish.datatype.shared.VALUE_BITMAP_HEIGHT_RATIO
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
+import com.jpweytjens.barberfish.datatype.shared.effectiveSlot
 import com.jpweytjens.barberfish.datatype.shared.layout
 import com.jpweytjens.barberfish.datatype.shared.slots
 import com.jpweytjens.barberfish.datatype.shared.toDoubleSlotSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.visibleSlots
+import com.jpweytjens.barberfish.datatype.shared.windSpeedApplies
 import com.jpweytjens.barberfish.datatype.shared.withDoubleLabel
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.DoubleFieldConfig
@@ -24,6 +26,7 @@ import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
 import com.jpweytjens.barberfish.extension.TimeConfig
+import com.jpweytjens.barberfish.extension.WindLayout
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import io.hammerhead.karooext.models.UserProfile
@@ -252,5 +255,42 @@ class DoubleFieldTest {
                 assertTrue(states.all { it.layout() == DoubleLayout.FIELDS })
             }
         }
+    }
+
+    @Test
+    fun `wind show speed applies only side by side with a label`() {
+        for (orientation in DoubleOrientation.entries) {
+            for (label in DoubleLabel.entries) {
+                val config = DoubleFieldConfig(orientation = orientation, label = label)
+                assertEquals(
+                    "$orientation $label",
+                    orientation == DoubleOrientation.HORIZONTAL && label != DoubleLabel.NONE,
+                    config.windSpeedApplies,
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `stacked or label-free Doubles draw wind without the speed, keeping the stored option`() {
+        val wind =
+            HUDSlotConfig(
+                field = HUDSlotField.Wind,
+                windShowSpeed = true,
+                windLayout = WindLayout.HEADWIND,
+            )
+        val stacked =
+            DoubleFieldConfig(first = wind, second = wind, orientation = DoubleOrientation.VERTICAL)
+        assertFalse(stacked.effectiveSlot(wind).windShowSpeed)
+        assertEquals(WindLayout.HEADWIND, stacked.effectiveSlot(wind).windLayout)
+        assertTrue(stacked.first.windShowSpeed)
+        val previews = DoubleField.previewStates(stacked, TimeConfig(), profile, ZoneConfig())
+        assertTrue(
+            previews.all { !it.first.field.headwindLayout && it.first.field.speedRow == null }
+        )
+        val sideBySide = stacked.copy(orientation = DoubleOrientation.HORIZONTAL)
+        assertTrue(sideBySide.effectiveSlot(wind).windShowSpeed)
+        val noLabel = sideBySide.copy(label = DoubleLabel.NONE)
+        assertFalse(noLabel.effectiveSlot(wind).windShowSpeed)
     }
 }

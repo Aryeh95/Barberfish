@@ -14,6 +14,7 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.HUD_UPDATE_INTERVAL_MS
 import com.jpweytjens.barberfish.datatype.shared.SlotState
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
+import com.jpweytjens.barberfish.datatype.shared.effectiveSlot
 import com.jpweytjens.barberfish.datatype.shared.layout
 import com.jpweytjens.barberfish.datatype.shared.renderDoublePanelBitmap
 import com.jpweytjens.barberfish.datatype.shared.slots
@@ -69,8 +70,8 @@ class DoubleField(
             }
             .flatMapLatest { (cfg, zones, profile) ->
                 combine(
-                    slotSource.liveFlow(cfg.first, zones, profile, context),
-                    slotSource.liveFlow(cfg.second, zones, profile, context),
+                    slotSource.liveFlow(cfg.effectiveSlot(cfg.first), zones, profile, context),
+                    slotSource.liveFlow(cfg.effectiveSlot(cfg.second), zones, profile, context),
                 ) { first, second ->
                     DoubleState(
                         first = SlotState(first, cfg.first.colorMode),
@@ -109,8 +110,10 @@ class DoubleField(
             profile: UserProfile,
             zones: ZoneConfig,
         ): List<DoubleState> {
-            val first = HUDSlotSource.previewStates(cfg.first, timeCfg, profile, zones)
-            val second = HUDSlotSource.previewStates(cfg.second, timeCfg, profile, zones)
+            val first =
+                HUDSlotSource.previewStates(cfg.effectiveSlot(cfg.first), timeCfg, profile, zones)
+            val second =
+                HUDSlotSource.previewStates(cfg.effectiveSlot(cfg.second), timeCfg, profile, zones)
             return (0 until minOf(first.size, second.size)).map { i ->
                 DoubleState(
                     first = SlotState(first[i], cfg.first.colorMode),
