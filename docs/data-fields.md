@@ -8,7 +8,8 @@ the single-cell fields first, then the 3- and 4-column HUD strips.
 Below, the same fields by category, with the palette, threshold, format and
 smoothing options each one supports; all are set per field in the Barberfish
 app, with live previews, and apply mid-ride. The [HUD](hud.md) has a page
-of its own, as do [Profile and Overview](elevation-profile.md).
+of its own, as do the [Double fields](double-fields.md) and
+[Profile and Overview](elevation-profile.md).
 
 <table>
   <thead>
@@ -26,6 +27,7 @@ of its own, as do [Profile and Overview](elevation-profile.md).
   <tbody>
     <tr><th colspan="5" align="center">HUD</th></tr>
     <tr><td>HUD</td><td>per-slot</td><td>per-slot</td><td>per-slot</td><td>per-slot</td></tr>
+    <tr><td>Double 1 / 2 / 3</td><td>per-slot</td><td>per-slot</td><td>per-slot</td><td>per-slot</td></tr>
     <tr><th colspan="5" align="center">Power</th></tr>
     <tr><td>Power</td><td>Zone</td><td></td><td></td><td>Instant / 3s / 5s / 10s / 30s / 20m / 1h</td></tr>
     <tr><td>Avg Power</td><td>Zone</td><td></td><td></td><td></td></tr>
@@ -48,6 +50,10 @@ of its own, as do [Profile and Overview](elevation-profile.md).
     <tr><td>Avg Speed (Moving)</td><td></td><td>Fixed / Min-max range</td><td></td><td></td></tr>
     <tr><th colspan="5" align="center">Cadence</th></tr>
     <tr><td>Cadence</td><td></td><td>Fixed / Min-max range</td><td></td><td>Instant / 3s / 5s / 10s</td></tr>
+    <tr><td>Avg Cadence</td><td></td><td>Fixed / Min-max range</td><td></td><td></td></tr>
+    <tr><td>Lap Avg Cadence</td><td></td><td>Fixed / Min-max range</td><td></td><td></td></tr>
+    <tr><td>Last Lap Avg Cadence</td><td></td><td>Fixed / Min-max range</td><td></td><td></td></tr>
+    <tr><td>Max Cadence</td><td></td><td>Fixed / Min-max range</td><td></td><td></td></tr>
     <tr><th colspan="5" align="center">Wind</th></tr>
     <tr><td>Wind</td><td></td><td>Headwind and tailwind (needs the Headwind extension)</td><td></td><td></td></tr>
     <tr><th colspan="5" align="center">Climbing</th></tr>
@@ -95,7 +101,7 @@ Power Zone and HR Zone toggle between integer (`3`) and one-decimal float (`3.4`
 
 ## Thresholds
 
-Speed, average speed, and cadence support threshold coloring. Speed compares against a fixed target or its running average. Average speed and cadence compare against a fixed target or a min/max range with warning bands. The scale itself is documented in [Threshold colors](color-palettes.md#threshold-colors).
+Speed, average speed, and cadence support threshold coloring. Speed compares against a fixed target or its running average. Average speed and cadence compare against a fixed target or a min/max range with warning bands. Cadence has no Karoo zones, so Avg, Lap Avg, Last Lap Avg and Max Cadence take the same threshold coloring as Cadence, each with its own target. The scale itself is documented in [Threshold colors](color-palettes.md#threshold-colors).
 
 <img src="screenshots/threshold_controls.jpg" width="360" alt="The Speed field's threshold controls: a source picker offering Fixed, Avg total and Avg moving, a target of 30 km/h, and under and over margins of 10 percent">
 
