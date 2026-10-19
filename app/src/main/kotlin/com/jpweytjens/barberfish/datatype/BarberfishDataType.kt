@@ -83,7 +83,13 @@ abstract class BarberfishDataType(extensionId: String, typeId: String) :
         config: ViewConfig,
         context: Context,
     ): RemoteViews {
-        val sizeConfig = config.toViewSizeConfig(design = design)
+        // Sized to the cell's real width rather than the screen share its span suggests: a
+        // half-width cell is 238 px of a 480 px screen, and a header label drawn for 240 is
+        // cropped at both ends.
+        val sizeConfig =
+            config
+                .toViewSizeConfig(design = design)
+                .copy(cellWidthPxOverride = config.viewSize.first.toFloat().takeIf { it > 0f })
         return barberfishFieldRemoteViews(
             field = state,
             alignment = config.alignment,

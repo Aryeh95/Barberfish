@@ -44,11 +44,41 @@ private const val DEBUG_LAYOUT = false
 private const val LAYOUT_PROBE_MODE = false
 private const val PROBE_MARKER_COLOR = 0xFFFF00FF.toInt()
 
-// Horizontal chrome between cellWidthPx and the field_label ImageView that the label
-// bitmap must not span: field_header paddingStart/End (1dp each) + field_label
-// marginStart (1dp). Rendering the bitmap wider than the view makes scaleType=center
-// crop it, clipping right-aligned labels on the right.
-private const val HEADER_LABEL_CHROME_DP = 3f
+// The header's XML side padding (field_header paddingStart/End) and the field_label marginStart,
+// each 1dp in every field layout.
+private const val HEADER_SIDE_PADDING_DP = 1f
+private const val HEADER_LABEL_MARGIN_DP = 1f
+
+/**
+ * Pixel size of a `dp` dimension as layout inflation resolves an XML padding or margin
+ * (`TypedValue.complexToDimensionPixelSize`): rounded to the nearest px, and at least 1.
+ */
+internal fun xmlDimensionPx(dp: Float, density: Float): Int =
+    (dp * density + 0.5f).toInt().coerceAtLeast(1)
+
+/**
+ * Width in px of the field_label ImageView's content, the most the label bitmap may span:
+ * scaleType=center crops a wider bitmap on both sides, which cut the last letter of right-aligned
+ * labels. Counted the way the layout hands out whole pixels: the header's side padding and the
+ * label's start margin as inflation rounds their 1dp (2 px at density 1.5 and 1.875, not 1.5 and
+ * 1.9), each icon at its integer max width, and the icon-label gap the label's padding takes.
+ * [cellWidthPx] is the header's own width, the cell less the field root's side padding.
+ */
+internal fun headerLabelWidthPx(
+    cellWidthPx: Float,
+    numIcons: Int,
+    iconSizeDp: Float,
+    gapDp: Float,
+    density: Float,
+): Int {
+    val icons =
+        if (numIcons > 0) numIcons * (iconSizeDp * density).toInt() + (gapDp * density).toInt()
+        else 0
+    val chrome =
+        2 * xmlDimensionPx(HEADER_SIDE_PADDING_DP, density) +
+            xmlDimensionPx(HEADER_LABEL_MARGIN_DP, density)
+    return (cellWidthPx.toInt() - chrome - icons).coerceAtLeast(1)
+}
 
 fun barberfishFieldRemoteViews(
     field: FieldState,
@@ -109,7 +139,10 @@ fun applySparklineHeaderChrome(
         rv,
         label,
         iconRes,
-        config.toViewSizeConfig(),
+        // The cell's real width, as for the numeric fields (BarberfishDataType.renderState).
+        config
+            .toViewSizeConfig()
+            .copy(cellWidthPxOverride = config.viewSize.first.toFloat().takeIf { it > 0f }),
         config.alignment,
         context,
     )
@@ -139,8 +172,8 @@ fun applySparklineHeaderChrome(
     // stays full-bleed, so inset only the header to align the icon/label with the numeric fields.
     // The +1dp mirrors the header's XML paddingStart/End that the numeric path keeps on top of the
     // root padding.
-    val onePx = density.toInt().coerceAtLeast(1)
-    rv.setViewPadding(R.id.field_header, paddingHPx + onePx, 0, paddingHPx + onePx, 0)
+    val sidePx = xmlDimensionPx(HEADER_SIDE_PADDING_DP, density)
+    rv.setViewPadding(R.id.field_header, paddingHPx + sidePx, 0, paddingHPx + sidePx, 0)
     val field =
         FieldState(primary = "", label = label, color = FieldColor.Default, iconRes = iconRes)
     applyHeaderChrome(
@@ -374,12 +407,15 @@ private fun applyHeaderChrome(
     val numIcons =
         if (!sizeConfig.showIcons) 0
         else (if (field.iconRes != null) 1 else 0) + (if (field.secondaryIconRes != null) 1 else 0)
-    val iconWidthPx =
-        if (numIcons > 0)
-            (numIcons * sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) *
-                density
-        else 0f
-    val labelAvailableWidthPx = cellWidthPx - iconWidthPx - HEADER_LABEL_CHROME_DP * density
+    val labelAvailableWidthPx =
+        headerLabelWidthPx(
+                cellWidthPx,
+                numIcons,
+                sizeConfig.headerIconSize.value,
+                sizeConfig.headerIconLabelGap.value,
+                density,
+            )
+            .toFloat()
 
     // header_ref anchors baseline_box's top via layout_below; its minHeight
     // must match the visible header so the centering region mirrors native's.
