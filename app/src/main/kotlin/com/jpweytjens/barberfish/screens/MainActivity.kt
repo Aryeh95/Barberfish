@@ -1948,7 +1948,7 @@ private fun RouteRemainingCard(
 }
 
 // Shared expand/collapse shell for FieldCard and SparklineCard. The header shows
-// `title` (and `headerTrailing` beside it) always; `headerExtra` (description + preview) animates
+// `title` always; `headerExtra` (description + preview) animates
 // in while selected,
 // and `controls` is the Grey200 body revealed below. The everSelected gate lazy-mounts
 // the animated regions so the collapse animation can play on first deselect.
@@ -1959,8 +1959,6 @@ internal fun ExpandableCard(
     onSelect: () -> Unit,
     testTag: String? = null,
     headerExtra: (@Composable () -> Unit)? = null,
-    // Beside the title whether open or not, e.g. a small preview of the collapsed card.
-    headerTrailing: (@Composable () -> Unit)? = null,
     controls: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -1979,12 +1977,7 @@ internal fun ExpandableCard(
                 },
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            if (headerTrailing == null) ControlLabel(title)
-            else
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    ControlLabel(title, Modifier.weight(1f))
-                    headerTrailing()
-                }
+            ControlLabel(title)
             if (everSelected && headerExtra != null) {
                 AnimatedVisibility(
                     visible = selected,

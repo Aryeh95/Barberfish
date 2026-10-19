@@ -13,7 +13,7 @@ Out of the box they show, side by side with icon and header:
 | 5 | NP | Avg HR |
 | 6 | Grade | Distance Remaining |
 
-In the Double fields section of the Barberfish app each Double has a card. Closed, a card shows a small still of its Double, so the six are easy to tell apart; tap it to open its settings and live preview.
+In the Double fields section of the Barberfish app each Double has a card, like the Data fields cards: tap one to open it, showing what it holds beside a live preview, and its settings below.
 
 ## Slots
 
