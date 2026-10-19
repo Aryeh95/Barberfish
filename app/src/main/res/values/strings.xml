@@ -5,6 +5,10 @@
     <string name="header_probe" translatable="false">M</string>
     <string name="hud_name">HUD</string>
     <string name="hud_description">Heads-up display with speed, HR, and power in three columns with zone coloring</string>
+    <string name="double_1_name">Double 1</string>
+    <string name="double_2_name">Double 2</string>
+    <string name="double_3_name">Double 3</string>
+    <string name="double_description">Two data fields in one, side by side or stacked, set up in the Barberfish+ settings</string>
     <string name="power_name">Power</string>
     <string name="power_description">Current power output with smoothing and zone coloring</string>
     <string name="hr_name">Heart Rate</string>

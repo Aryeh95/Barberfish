@@ -11,6 +11,7 @@ import com.jpweytjens.barberfish.datatype.BarberfishBase
 import com.jpweytjens.barberfish.datatype.CadenceField
 import com.jpweytjens.barberfish.datatype.CadenceStatField
 import com.jpweytjens.barberfish.datatype.CadenceStatKind
+import com.jpweytjens.barberfish.datatype.DoubleField
 import com.jpweytjens.barberfish.datatype.ETAField
 import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.EffortField
@@ -123,6 +124,9 @@ private const val CHEVRON_LOOKAHEAD_PX = 800.0
 fun barberfishDataTypes(karooSystem: KarooSystemService): List<BarberfishBase<*>> =
     listOf(
         HUDField(karooSystem),
+        DoubleField(karooSystem, DoubleFieldKind.DOUBLE_1),
+        DoubleField(karooSystem, DoubleFieldKind.DOUBLE_2),
+        DoubleField(karooSystem, DoubleFieldKind.DOUBLE_3),
         // Power
         PowerField(karooSystem),
         AvgPowerField(karooSystem),

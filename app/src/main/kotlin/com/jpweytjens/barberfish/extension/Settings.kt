@@ -149,6 +149,83 @@ data class HUDSlotConfig(
     val windShowHeader: Boolean = true,
 )
 
+// --- DoubleFieldConfig ---
+// The three Double fields: two HUD slot configs in one Karoo cell, side by side or stacked. Each
+// Double has its own key; the slots keep every option they have in the HUD.
+
+@Serializable
+enum class DoubleOrientation(val label: String) {
+    HORIZONTAL("Horizontal"),
+    VERTICAL("Vertical"),
+}
+
+/** What a Double draws to name each value: the field icon, the header text, both, or nothing. */
+@Serializable
+enum class DoubleLabel(val label: String) {
+    ICON("Icon"),
+    HEADER("Header"),
+    BOTH("Both"),
+    NONE("None");
+
+    val showsIcon: Boolean
+        get() = this == ICON || this == BOTH
+
+    val showsText: Boolean
+        get() = this == HEADER || this == BOTH
+}
+
+@Serializable
+data class DoubleFieldConfig(
+    // Left when horizontal, top when vertical.
+    val first: HUDSlotConfig = HUDSlotConfig(field = HUDSlotField.Power),
+    val second: HUDSlotConfig = HUDSlotConfig(field = HUDSlotField.HR),
+    val orientation: DoubleOrientation = DoubleOrientation.HORIZONTAL,
+    val label: DoubleLabel = DoubleLabel.BOTH,
+)
+
+enum class DoubleFieldKind(
+    val number: Int,
+    internal val key: Preferences.Key<String>,
+    val default: DoubleFieldConfig,
+) {
+    DOUBLE_1(
+        1,
+        stringPreferencesKey("double_field_1_config"),
+        DoubleFieldConfig(
+            first = HUDSlotConfig(field = HUDSlotField.Power),
+            second = HUDSlotConfig(field = HUDSlotField.HR),
+        ),
+    ),
+    DOUBLE_2(
+        2,
+        stringPreferencesKey("double_field_2_config"),
+        DoubleFieldConfig(
+            first = HUDSlotConfig(field = HUDSlotField.Speed),
+            second = HUDSlotConfig(field = HUDSlotField.Cadence),
+        ),
+    ),
+    DOUBLE_3(
+        3,
+        stringPreferencesKey("double_field_3_config"),
+        DoubleFieldConfig(
+            first = HUDSlotConfig(field = HUDSlotField.AvgPower),
+            second = HUDSlotConfig(field = HUDSlotField.AvgCadence),
+        ),
+    );
+
+    val typeId: String
+        get() = "double-$number"
+
+    val title: String
+        get() = "Double $number"
+}
+
+fun Context.streamDoubleFieldConfig(kind: DoubleFieldKind): Flow<DoubleFieldConfig> =
+    streamConfig(kind.key, kind.default)
+
+suspend fun Context.saveDoubleFieldConfig(kind: DoubleFieldKind, config: DoubleFieldConfig) =
+    saveConfig(kind.key, config)
+
 @Serializable
 enum class ElevationSimplification(val label: String, val minAreaM2: Float) {
     NONE("Off", 0f),
@@ -875,6 +952,7 @@ suspend fun Context.saveDataFieldDesignConfig(config: DataFieldDesignConfig) =
  */
 data class ConfigSnapshot(
     val hud: HUDConfig,
+    val doubleFields: Map<DoubleFieldKind, DoubleFieldConfig>,
     val hudSparkline: SparklineConfig,
     val fieldSparkline: SparklineConfig,
     val gradeMap: GradeMapConfig,
@@ -913,6 +991,8 @@ fun Context.streamConfigSnapshot(): Flow<ConfigSnapshot> =
         .map { prefs ->
             ConfigSnapshot(
                 hud = prefs.config(hudConfigKey, HUDConfig()),
+                doubleFields =
+                    DoubleFieldKind.entries.associateWith { prefs.config(it.key, it.default) },
                 hudSparkline = prefs.hudSparklineConfig(),
                 fieldSparkline = prefs.fieldSparklineConfig(),
                 gradeMap = prefs.config(gradeMapConfigKey, GradeMapConfig()),

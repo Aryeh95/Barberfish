@@ -10,6 +10,25 @@
         displayName="@string/hud_name"
         description="@string/hud_description"
         graphical="true" />
+    <!-- Double fields -->
+    <DataType
+        icon="@drawable/ic_double"
+        typeId="double-1"
+        displayName="@string/double_1_name"
+        description="@string/double_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_double"
+        typeId="double-2"
+        displayName="@string/double_2_name"
+        description="@string/double_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_double"
+        typeId="double-3"
+        displayName="@string/double_3_name"
+        description="@string/double_description"
+        graphical="true" />
     <!-- Power -->
     <DataType
         icon="@drawable/ic_col_power"

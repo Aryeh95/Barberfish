@@ -1,0 +1,11 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="38dp"
+    android:height="38dp"
+    android:viewportWidth="38"
+    android:viewportHeight="38">
+    <!-- A field box split in two: rounded frame and divider, width=2.5 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M8,8 H30 A3,3,0,0,1,33,11 V27 A3,3,0,0,1,30,30 H8 A3,3,0,0,1,5,27 V11 A3,3,0,0,1,8,8 Z M7.5,10.5 V27.5 H17.75 V10.5 Z M20.25,10.5 V27.5 H30.5 V10.5 Z" />
+</vector>
