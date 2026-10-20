@@ -1,8 +1,22 @@
 # Barberfish+
 
 A personal fork of [Barberfish](https://github.com/jpweytjens/Barberfish) with its own package
-(`io.github.aryeh95.barberfish`), update channel and additions. See
-[docs/custom-build.md](docs/custom-build.md) for what differs. Everything else below is upstream's.
+(`io.github.aryeh95.barberfish`), update channel and additions:
+
+- Eight [Double fields](docs/double-fields.md): two HUD slots in one cell, side by side or stacked.
+  A half whose sensor is missing, or that needs a route when none is loaded, drops out and the
+  other value fills the cell.
+- Elevation, Ascent and Descent as HUD and Double slots, so the colored grade and the current
+  elevation can share a cell.
+- Avg, Lap Avg, Last Lap Avg and Max Cadence, as fields and slots.
+- Ride Remaining can add the descent left as a third value, lay its values side by side, and hide
+  its header.
+- Distance, Ascent and Descent read 0 before the ride and hold their total while paused.
+- The Wind field, HUD slot and map windsock from the developer's unreleased wind work, with
+  **Show speed** and a Headwind-style layout on the Wind slot (needs the Headwind extension).
+
+[docs/custom-build.md](docs/custom-build.md) has the details and the [changelog](CHANGELOG.md) the
+history. Everything else below is upstream's.
 
 [![Release](https://img.shields.io/github/v/release/Aryeh95/barberfish)](https://github.com/Aryeh95/barberfish/releases/latest)
 [![Download](https://img.shields.io/badge/download-barberfish.apk-2ea44f?logo=android&logoColor=white)](https://github.com/Aryeh95/barberfish/releases/latest/download/barberfish.apk)
@@ -29,9 +43,9 @@ Barberfish fields sit alongside the native ones, match their look, and quietly a
 ## Highlights
 
 - A 3- or 4-column HUD [groups any fields side by side](docs/hud.md), with zone coloring, smoothing, and formatting set per slot.
-- Six [Double fields](docs/double-fields.md) fit two of those slots in one cell, side by side or stacked, labelled by icon, header, both, or not at all.
+- Eight [Double fields](docs/double-fields.md) fit two of those slots in one cell, side by side or stacked, labelled by icon, header, both, or not at all.
 - With a route loaded, the [elevation profile](docs/elevation-profile.md) shows the terrain ahead or, in Climbs mode, [frames each climb foot to summit](docs/gallery.md#climbs-mode).
-- [Overview](docs/elevation-profile.md#the-overview-field) draws the whole route with a dot for where you are, and Ride Remaining stacks the distance and climbing left.
+- [Overview](docs/elevation-profile.md#the-overview-field) draws the whole route with a dot for where you are, and Ride Remaining shows the distance, climbing and (optionally) descent left.
 - The grade map [colors the route on the map page by grade](docs/grade-map.md), with direction chevrons on top. It is in beta.
 - Grade is [fitted to the road rather than the clock](docs/algorithms.md#grade): steady at any speed, and unmoved by a stop, a pause at a light, or barometer drift while you wait.
 - Zone and grade coloring as colored text or a filled cell, with [palettes from other bike computers and training apps](docs/color-palettes.md).
@@ -41,7 +55,7 @@ The [gallery](docs/gallery.md) shows more of Barberfish on the Karoo. The [docum
 
 ## Data fields
 
-50 fields across twelve categories: power, heart rate, speed, cadence, wind, climbing, navigation, time, ETA, daylight, the HUD, and the Double fields. The [data fields](docs/data-fields.md) page lists each field's palette, threshold, format, and smoothing options.
+52 fields across twelve categories: power, heart rate, speed, cadence, wind, climbing, navigation, time, ETA, daylight, the HUD, and the Double fields. The [data fields](docs/data-fields.md) page lists each field's palette, threshold, format, and smoothing options.
 
 ![Every Barberfish field, rendered as it appears in the Karoo field picker](docs/screenshots/all_fields.png)
 
@@ -75,6 +89,8 @@ Theme, units, and zones follow your Karoo automatically; Karoo's Data Field Desi
 
 New features reach [Betafish](https://github.com/jpweytjens/Betafish), the beta channel, before they ship here. Betas are less tested, so expect rough edges. A beta replaces your stable install and carries your settings over, and later betas arrive as regular updates in the Karoo's extension manager.
 
+Betafish is the beta of the official Barberfish, not of Barberfish+: it does not update Barberfish+, and it does not carry Barberfish+'s additions or settings. Barberfish+ updates come from [this fork's releases](https://github.com/Aryeh95/barberfish/releases).
+
 ## Credits
 
 - [karoo-ext](https://github.com/hammerheadnav/karoo-ext): the official Hammerhead SDK for building Karoo extensions
@@ -85,7 +101,7 @@ New features reach [Betafish](https://github.com/jpweytjens/Betafish), the beta 
 
 ## Contributing
 
-Bug reports, feature requests and pull requests are welcome on [GitHub](https://github.com/jpweytjens/barberfish), especially on the grade map while it is in beta.
+Bug reports, feature requests and pull requests are welcome on [GitHub](https://github.com/jpweytjens/barberfish), especially on the grade map while it is in beta. Issues with the Barberfish+ additions listed at the top belong on [this fork](https://github.com/Aryeh95/barberfish/issues) instead.
 
 ### For extension developers
 

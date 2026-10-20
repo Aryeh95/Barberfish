@@ -1,8 +1,27 @@
 # Custom build
 
 This branch (`custom`) is Barberfish 4.0 with the developer's unreleased wind work
-(`worktree-wind-sock`) merged in, plus **Show speed** on the Wind HUD slot. It is released as
-**Barberfish+** under its own package, `io.github.aryeh95.barberfish`.
+(`worktree-wind-sock`) merged in, plus additions of its own. It is released as **Barberfish+**
+under its own package, `io.github.aryeh95.barberfish`.
+
+## Additions
+
+- **Show speed** and a Headwind layout on the Wind HUD slot (below).
+- **Double 1 to 8** ([double-fields.md](double-fields.md)): two HUD slots in one cell. A half
+  whose sensor the Karoo has given up on, or that shows "No route" while no route is loaded,
+  drops out and the other value takes the cell; both stay when both would drop.
+- **Elevation, Ascent and Descent** slots under Climbing, from the Karoo's current elevation and
+  the ride's ascent and descent totals.
+- **Cadence averages**: Avg, Lap Avg, Last Lap Avg and Max Cadence, as fields and slots, with
+  Cadence's threshold coloring.
+- **Ride Remaining**: side by side or stacked, the descent left as an optional third value, and
+  a Header switch.
+- **Ride totals** (Distance, Ascent, Descent) read 0 before the ride and keep their last value
+  while their stream is idle, instead of "No data".
+- Header labels in narrow HUD and Double slots shrink to keep a long word whole, and a value
+  drawn without its header never outgrows its cell.
+
+The [changelog](../CHANGELOG.md) lists them per release.
 
 ## Identity and releases
 
@@ -45,6 +64,9 @@ With Show speed on, **Layout** picks how the slot draws:
   alone.
 
 ## What differs from upstream
+
+The file lists below cover the wind work. The other additions are in the commits on `custom`
+after the upstream merge; `git log upstream/master..custom` lists them.
 
 New files, no conflict surface:
 
