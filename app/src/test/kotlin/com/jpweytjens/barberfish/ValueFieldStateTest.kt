@@ -7,6 +7,8 @@ import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
 import io.hammerhead.karooext.models.UserProfile
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -120,5 +122,39 @@ class ValueFieldStateTest {
         val missing =
             ValueField.toFieldState(StreamState.NotAvailable, ValueKind.ASCENT, metricProfile)
         assertEquals("Not available", missing.primary)
+    }
+
+    @Test
+    fun `ride totals read 0 while idle before the ride, and their last value after`() {
+        for (kind in listOf(ValueKind.DISTANCE, ValueKind.ASCENT, ValueKind.DESCENT)) {
+            val before = ValueField.toFieldState(StreamState.Idle, kind, metricProfile)
+            assertEquals(kind.format(0.0), before.primary)
+            assertFalse("not live while idle", before.liveIcon)
+        }
+        val paused =
+            ValueField.toFieldState(StreamState.Idle, ValueKind.ASCENT, metricProfile, 862.6)
+        assertEquals("863", paused.primary)
+        val distance =
+            ValueField.toFieldState(StreamState.Idle, ValueKind.DISTANCE, metricProfile, 29_340.0)
+        assertEquals("29.3", distance.primary)
+    }
+
+    @Test
+    fun `streaming totals are live, and other kinds still say no data while idle`() {
+        val live =
+            ValueField.toFieldState(
+                streaming(ValueKind.ASCENT, mapOf(DataType.Field.ELEVATION_GAIN to 10.0)),
+                ValueKind.ASCENT,
+                metricProfile,
+                862.6,
+            )
+        assertEquals("10", live.primary)
+        assertTrue(live.liveIcon)
+        for (kind in listOf(ValueKind.ELEVATION, ValueKind.DISTANCE_REMAINING)) {
+            assertEquals(
+                "No data",
+                ValueField.toFieldState(StreamState.Idle, kind, metricProfile).primary,
+            )
+        }
     }
 }

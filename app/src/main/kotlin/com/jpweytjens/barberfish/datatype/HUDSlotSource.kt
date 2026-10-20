@@ -206,34 +206,17 @@ class HUDSlotSource(private val karooSystem: KarooSystemService) {
             HUDSlotField.Wind ->
                 WindField.liveStates(karooSystem, profile, WindFieldConfig(slot.colorMode))
                     .withSpeed(slot, karooSystem, profile)
-            HUDSlotField.Distance ->
-                karooSystem.streamDataFlow(ValueKind.DISTANCE.sourceType).map {
-                    ValueField.toFieldState(it, ValueKind.DISTANCE, profile)
-                }
+            HUDSlotField.Distance -> ValueField.liveStates(karooSystem, ValueKind.DISTANCE, profile)
             HUDSlotField.DistanceRemaining ->
-                karooSystem.streamDataFlow(ValueKind.DISTANCE_REMAINING.sourceType).map {
-                    ValueField.toFieldState(it, ValueKind.DISTANCE_REMAINING, profile)
-                }
+                ValueField.liveStates(karooSystem, ValueKind.DISTANCE_REMAINING, profile)
             HUDSlotField.ElevationRemaining ->
-                karooSystem.streamDataFlow(ValueKind.ELEVATION_REMAINING.sourceType).map {
-                    ValueField.toFieldState(it, ValueKind.ELEVATION_REMAINING, profile)
-                }
+                ValueField.liveStates(karooSystem, ValueKind.ELEVATION_REMAINING, profile)
             HUDSlotField.DescentRemaining ->
-                karooSystem.streamDataFlow(ValueKind.DESCENT_REMAINING.sourceType).map {
-                    ValueField.toFieldState(it, ValueKind.DESCENT_REMAINING, profile)
-                }
-            HUDSlotField.Ascent ->
-                karooSystem.streamDataFlow(ValueKind.ASCENT.sourceType).map {
-                    ValueField.toFieldState(it, ValueKind.ASCENT, profile)
-                }
-            HUDSlotField.Descent ->
-                karooSystem.streamDataFlow(ValueKind.DESCENT.sourceType).map {
-                    ValueField.toFieldState(it, ValueKind.DESCENT, profile)
-                }
+                ValueField.liveStates(karooSystem, ValueKind.DESCENT_REMAINING, profile)
+            HUDSlotField.Ascent -> ValueField.liveStates(karooSystem, ValueKind.ASCENT, profile)
+            HUDSlotField.Descent -> ValueField.liveStates(karooSystem, ValueKind.DESCENT, profile)
             HUDSlotField.Elevation ->
-                karooSystem.streamDataFlow(ValueKind.ELEVATION.sourceType).map {
-                    ValueField.toFieldState(it, ValueKind.ELEVATION, profile)
-                }
+                ValueField.liveStates(karooSystem, ValueKind.ELEVATION, profile)
             is HUDSlotField.AvgSpeed ->
                 AvgSpeedField.streamFlow(
                     karooSystem,

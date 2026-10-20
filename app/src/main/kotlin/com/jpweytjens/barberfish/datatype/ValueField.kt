@@ -18,6 +18,7 @@ import io.hammerhead.karooext.models.UserProfile
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 
 /**
@@ -118,6 +119,11 @@ enum class ValueKind(
     // Elevation goes below sea level; every other kind is a distance or climb, never negative.
     fun format(value: Double): String =
         if (this == ELEVATION) formatSigned(value, decimals) else formatFixed(value, decimals)
+
+    // Ride totals: they start at 0 and only grow, so while the Karoo sends nothing (before the
+    // ride starts, or paused) they read 0 or their last value rather than "No data".
+    val isRideTotal: Boolean
+        get() = this == DISTANCE || this == ASCENT || this == DESCENT
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -128,9 +134,7 @@ class ValueField(
 
     override fun liveFlow(context: Context): Flow<FieldState> =
         karooSystem.streamUserProfile().flatMapLatest { profile ->
-            karooSystem.streamDataFlow(kind.sourceType).map { state ->
-                toFieldState(state, kind, profile)
-            }
+            liveStates(karooSystem, kind, profile)
         }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
@@ -139,7 +143,47 @@ class ValueField(
         }
 
     companion object {
-        fun toFieldState(state: StreamState, kind: ValueKind, profile: UserProfile): FieldState {
+        /**
+         * Live states for [kind], shared by the standalone field and its HUD and Double slots. A
+         * ride total remembers its last value to show while its stream is idle.
+         */
+        fun liveStates(
+            karooSystem: KarooSystemService,
+            kind: ValueKind,
+            profile: UserProfile,
+        ): Flow<FieldState> {
+            val states = karooSystem.streamDataFlow(kind.sourceType)
+            if (!kind.isRideTotal) return states.map { toFieldState(it, kind, profile) }
+            return flow {
+                var lastRaw: Double? = null
+                states.collect { state ->
+                    (state as? StreamState.Streaming)?.dataPoint?.values?.get(kind.fieldId)?.let {
+                        lastRaw = it
+                    }
+                    emit(toFieldState(state, kind, profile, lastRaw))
+                }
+            }
+        }
+
+        /**
+         * [state] as a field. A ride total whose stream is idle shows [heldRaw], its last value, or
+         * 0 before it has one, with the icon in the idle colour as the stream is not live.
+         */
+        fun toFieldState(
+            state: StreamState,
+            kind: ValueKind,
+            profile: UserProfile,
+            heldRaw: Double? = null,
+        ): FieldState {
+            if (kind.isRideTotal && state is StreamState.Idle) {
+                return FieldState(
+                    primary = kind.format(kind.convert.apply(heldRaw ?: 0.0, profile)),
+                    label = kind.label,
+                    color = FieldColor.Default,
+                    iconRes = kind.iconRes,
+                    liveIcon = false,
+                )
+            }
             val notAvailable =
                 if (kind.requiresRoute) FieldState.noRoute(kind.label, kind.iconRes)
                 else FieldState.notAvailable(kind.label, kind.iconRes)

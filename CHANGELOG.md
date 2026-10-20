@@ -11,6 +11,7 @@ Barberfish+, a personal fork of Barberfish 4.0:
 - Ride Remaining can show the distance and ascent side by side as well as stacked, add the descent remaining as a third value, and hide its header to give the values more room
 - Elevation, Ascent and Descent as HUD and Double slots, so the colored Grade and the current elevation can share a cell
 - With no route loaded, a Double's navigation half drops out and the other value fills the cell
+- Distance, Ascent and Descent read 0 before the ride starts and keep their total while paused, instead of No data
 - Avg Cadence, Lap Avg Cadence, Last Lap Avg Cadence and Max Cadence, as fields and as HUD slots, with Cadence's threshold coloring
 
 ## 4.0
