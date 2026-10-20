@@ -25,7 +25,7 @@ internal fun windArrowBoxPx(bitmapHeightPx: Int): Int = bitmapHeightPx
  * left after the arrow box and gap. [arrowColor] is the cell's header text colour, never the zone
  * colour: colour stays on the number.
  */
-// Suppressed: matches the sibling renderers in BitmapValue.kt (renderTwoRowValueBitmap,
+// Suppressed: matches the sibling renderers in BitmapValue.kt (renderStackedValueBitmap,
 // renderHeaderBitmap) — one parameter per independent input, no grouping type would earn its keep.
 @Suppress("LongParameterList")
 fun renderWindArrowValueBitmap(

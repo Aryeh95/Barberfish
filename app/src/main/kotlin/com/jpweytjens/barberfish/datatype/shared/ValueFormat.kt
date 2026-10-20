@@ -8,3 +8,10 @@ import java.util.Locale
  */
 fun formatFixed(value: Double, decimals: Int): String =
     "%.${decimals}f".format(Locale.ROOT, value.coerceAtLeast(0.0))
+
+/** [formatFixed] for values that can go below zero (elevation), without a "-0". */
+fun formatSigned(value: Double, decimals: Int): String {
+    val text = "%.${decimals}f".format(Locale.ROOT, value)
+    return if (text.startsWith("-") && text.drop(1).all { it == '0' || it == '.' }) text.drop(1)
+    else text
+}

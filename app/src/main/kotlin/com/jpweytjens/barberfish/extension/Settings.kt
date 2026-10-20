@@ -123,6 +123,12 @@ sealed interface HUDSlotField {
 
     @Serializable data object DescentRemaining : HUDSlotField
 
+    @Serializable data object Ascent : HUDSlotField
+
+    @Serializable data object Descent : HUDSlotField
+
+    @Serializable data object Elevation : HUDSlotField
+
     @Serializable data class AvgSpeed(val includePaused: Boolean = false) : HUDSlotField
 
     @Serializable data class Time(val kind: TimeKind = TimeKind.TOTAL) : HUDSlotField
@@ -758,6 +764,10 @@ data class EffortFieldConfig(
     val climbFirst: Boolean = false,
     // Distance and ascent one above the other (as before the setting existed) or side by side.
     val orientation: FieldOrientation = FieldOrientation.VERTICAL,
+    // Descent remaining as a third value, after the ascent.
+    val showDescent: Boolean = false,
+    // false draws the values without the header row, taking its height.
+    val showHeader: Boolean = true,
 )
 
 private val effortFieldConfigKey = stringPreferencesKey("remaining_effort_field_config")

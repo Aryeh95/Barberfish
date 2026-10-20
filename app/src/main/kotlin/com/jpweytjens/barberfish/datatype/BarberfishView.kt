@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.graphics.Paint
 import android.graphics.Typeface
 import android.os.Build
 import android.util.TypedValue
@@ -14,6 +15,7 @@ import androidx.core.graphics.drawable.toBitmap
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ASCENT_MARKER
 import com.jpweytjens.barberfish.datatype.shared.ColorConfig
+import com.jpweytjens.barberfish.datatype.shared.DESCENT_MARKER
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.SideBySideValues
@@ -24,7 +26,7 @@ import com.jpweytjens.barberfish.datatype.shared.headerHeightPx
 import com.jpweytjens.barberfish.datatype.shared.hideFieldHeader
 import com.jpweytjens.barberfish.datatype.shared.renderHeaderBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderSideBySideValueBitmap
-import com.jpweytjens.barberfish.datatype.shared.renderTwoRowValueBitmap
+import com.jpweytjens.barberfish.datatype.shared.renderStackedValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderWindArrowValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.speedWindBitmapHeightPx
@@ -57,6 +59,23 @@ private const val HEADER_LABEL_MARGIN_DP = 1f
  */
 internal fun xmlDimensionPx(dp: Float, density: Float): Int =
     (dp * density + 0.5f).toInt().coerceAtLeast(1)
+
+/**
+ * [sp], or smaller when the label's longest word, drawn uppercase in the header font, is wider than
+ * [widthPx]: the header wraps at spaces, so a word that does not fit would break inside it
+ * ("ELEVATIO" / "N").
+ */
+internal fun wordFitSp(label: String, sp: Float, widthPx: Float, density: Float): Float {
+    val paint =
+        Paint().apply {
+            typeface = Typeface.create("ibm-plex-sans-condensed", Typeface.NORMAL)
+            textSize = sp * density
+        }
+    val widest = label.uppercase().split(' ', '\n').maxOf { paint.measureText(it) }
+    // A hair under the width, as the header's layout measures to whole pixels.
+    val room = widthPx - 1f
+    return if (widest <= room || widest <= 0f) sp else sp * room / widest
+}
 
 /**
  * Width in px of the field_label ImageView's content, the most the label bitmap may span:
@@ -315,43 +334,46 @@ private fun makeFieldRemoteViews(
                 context = context,
             )
         } else if (field.secondary != null) {
-            // Two stacked rows share the single-row value height (same footprint as the numeric
-            // fields); the renderer splits it into two equal bands and sizes the font to fit. Each
-            // row gets an inline icon tinted to the value color: the route glyph before the
-            // distance
-            // and the ascent arrow before the climb (the row carrying the ASCENT_MARKER prefix).
+            // Two or three values share the single-row value height (same footprint as the
+            // numeric fields), stacked in equal bands or side by side. Each gets an inline icon
+            // tinted to the value color: the ascent or descent arrow before a value carrying its
+            // marker (ASCENT_MARKER, DESCENT_MARKER), the route glyph before the distance.
             val tint = colors.valueText.toArgb()
             fun glyph(res: Int) =
                 ContextCompat.getDrawable(context, res)
                     ?.mutate()
                     ?.apply { setTint(tint) }
                     ?.toBitmap(bitmapHeightPx, bitmapHeightPx)
-            val arrowGlyph = glyph(R.drawable.ic_arrow_outward)
+            val ascentGlyph = glyph(R.drawable.ic_arrow_outward)
+            val descentGlyph = glyph(R.drawable.ic_arrow_outward_down)
             val routeGlyph = glyph(R.drawable.ic_route)
-            val primaryIsClimb = field.primary.startsWith(ASCENT_MARKER)
+            val values =
+                listOfNotNull(valueText, field.secondary, field.tertiary).map {
+                    it.replace(',', '.')
+                }
+            val icons = values.map {
+                when {
+                    it.startsWith(ASCENT_MARKER) -> ascentGlyph
+                    it.startsWith(DESCENT_MARKER) -> descentGlyph
+                    else -> routeGlyph
+                }
+            }
             if (field.secondaryBeside) {
                 renderSideBySideValueBitmap(
-                    SideBySideValues(
-                        first = valueText,
-                        second = field.secondary.replace(',', '.'),
-                        firstIcon = if (primaryIsClimb) arrowGlyph else routeGlyph,
-                        secondIcon = if (primaryIsClimb) routeGlyph else arrowGlyph,
-                    ),
+                    SideBySideValues(values, icons),
                     bitmapHeightPx = bitmapHeightPx,
                     cellWidthPx = cellWidthPx,
                     color = tint,
                     alignment = alignment,
                 )
             } else
-                renderTwoRowValueBitmap(
-                    row1 = valueText,
-                    row2 = field.secondary.replace(',', '.'),
+                renderStackedValueBitmap(
+                    rows = values,
                     bitmapHeightPx = bitmapHeightPx,
                     cellWidthPx = cellWidthPx,
                     color = tint,
                     alignment = alignment,
-                    row1Icon = if (primaryIsClimb) arrowGlyph else routeGlyph,
-                    row2Icon = if (primaryIsClimb) routeGlyph else arrowGlyph,
+                    icons = icons,
                 )
         } else {
             renderValueBitmap(
@@ -456,7 +478,7 @@ private fun applyHeaderChrome(
                 wrapThresholdSp = sizeConfig.wrapThresholdSp,
                 typeface = Typeface.DEFAULT,
             )
-        labelFontSp = sp.toFloat()
+        labelFontSp = wordFitSp(displayLabel, sp.toFloat(), labelAvailableWidthPx, density)
         labelLines = 2 // all HUD slots always reserve 2-line height for consistent alignment
     } else {
         labelFontSp = sizeConfig.headerFontSize.value

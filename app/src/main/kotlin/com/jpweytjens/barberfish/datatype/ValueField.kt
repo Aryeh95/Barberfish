@@ -7,6 +7,7 @@ import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.formatFixed
+import com.jpweytjens.barberfish.datatype.shared.formatSigned
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.toErrorFieldState
@@ -20,8 +21,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 
 /**
- * The four thin numeric fields. Each streams one native datatype, converts the raw value, and emits
- * a FieldState. Route-gated kinds report "Not available" off-route.
+ * The thin numeric fields and slots. Each streams one native datatype, converts the raw value, and
+ * emits a FieldState. Route-gated kinds report "Not available" off-route.
  */
 enum class ValueKind(
     val typeId: String,
@@ -78,6 +79,45 @@ enum class ValueKind(
         true,
         listOf(1310.0, 610.0, 95.0),
     ),
+    // The ride's climbing totals and current elevation: HUD and Double slots only, as the Karoo
+    // has its own fields for them.
+    ASCENT(
+        "ascent",
+        DataType.Type.ELEVATION_GAIN,
+        DataType.Field.ELEVATION_GAIN,
+        ConvertType.ELEVATION,
+        0,
+        "Ascent",
+        R.drawable.ic_arrow_outward,
+        false,
+        listOf(320.0, 860.0, 1450.0),
+    ),
+    DESCENT(
+        "descent",
+        DataType.Type.ELEVATION_LOSS,
+        DataType.Field.ELEVATION_LOSS,
+        ConvertType.ELEVATION,
+        0,
+        "Descent",
+        R.drawable.ic_arrow_outward_down,
+        false,
+        listOf(290.0, 810.0, 1390.0),
+    ),
+    ELEVATION(
+        "elevation",
+        DataType.Type.PRESSURE_ELEVATION_CORRECTION,
+        DataType.Field.PRESSURE_ELEVATION,
+        ConvertType.ELEVATION,
+        0,
+        "Elevation",
+        R.drawable.ic_landscape,
+        false,
+        listOf(112.0, 348.0, 615.0),
+    );
+
+    // Elevation goes below sea level; every other kind is a distance or climb, never negative.
+    fun format(value: Double): String =
+        if (this == ELEVATION) formatSigned(value, decimals) else formatFixed(value, decimals)
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -116,7 +156,7 @@ class ValueField(
             val raw = streaming.dataPoint.values[kind.fieldId] ?: return notAvailable
             val converted = kind.convert.apply(raw, profile)
             return FieldState(
-                primary = formatFixed(converted, kind.decimals),
+                primary = kind.format(converted),
                 label = kind.label,
                 color = FieldColor.Default,
                 iconRes = kind.iconRes,
@@ -126,7 +166,7 @@ class ValueField(
         fun previewStates(kind: ValueKind, profile: UserProfile): List<FieldState> =
             kind.previewRaw.map { raw ->
                 FieldState(
-                    primary = formatFixed(kind.convert.apply(raw, profile), kind.decimals),
+                    primary = kind.format(kind.convert.apply(raw, profile)),
                     label = kind.label,
                     color = FieldColor.Default,
                     iconRes = kind.iconRes,

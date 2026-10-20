@@ -15,6 +15,8 @@ data class FieldState(
     // when `secondaryBeside`.
     val secondary: String? = null,
     val secondaryBeside: Boolean = false,
+    // Optional third value after `secondary`, laid out the same way (Ride Remaining's descent).
+    val tertiary: String? = null,
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
     // false drops the icon's teal "connected" tint to the theme foreground. Native gates
     // the ride-clock fields' icon green on the ride having started; everything else is

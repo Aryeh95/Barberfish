@@ -101,6 +101,7 @@ fun ViewConfig.toViewSizeConfig(
         labelMaxLines = labelMaxLines,
         wrapThresholdSp = wrapThresholdSp,
         showIcons = design.showIcons,
+        cellHeightPx = viewSize.second.toFloat().takeIf { it > 0f },
     )
 }
 
@@ -208,6 +209,8 @@ data class ViewSizeConfig(
     val valueTranslationDp: Int = 0,
     val showIcons: Boolean = true,
     val cellWidthPxOverride: Float? = null,
+    // The cell's height, where the SDK gives it: bounds a value drawn without its header.
+    val cellHeightPx: Float? = null,
 ) {
     companion object {
         val STANDARD =

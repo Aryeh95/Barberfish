@@ -642,6 +642,9 @@ internal fun HUDSlotFieldCard(
                 HUDSlotField.DistanceRemaining -> {}
                 HUDSlotField.ElevationRemaining -> {}
                 HUDSlotField.DescentRemaining -> {}
+                HUDSlotField.Ascent -> {}
+                HUDSlotField.Descent -> {}
+                HUDSlotField.Elevation -> {}
                 is HUDSlotField.Time -> {}
                 is HUDSlotField.ETA -> {}
             }
@@ -692,6 +695,9 @@ internal fun HUDSlotField.displayName(): String =
         HUDSlotField.DistanceRemaining -> "Distance remaining"
         HUDSlotField.ElevationRemaining -> "Ascent remaining"
         HUDSlotField.DescentRemaining -> "Descent remaining"
+        HUDSlotField.Ascent -> "Ascent"
+        HUDSlotField.Descent -> "Descent"
+        HUDSlotField.Elevation -> "Elevation"
         is HUDSlotField.Time -> f.kind.label.replace("\n", " ")
         is HUDSlotField.ETA -> f.kind.label.replace("\n", " ")
     }
@@ -751,7 +757,13 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
                             "Max Cadence" to HUDSlotField.MaxCadence,
                         ),
                     "Wind" to listOf("Wind" to HUDSlotField.Wind),
-                    "Climbing" to listOf("Grade" to HUDSlotField.Grade),
+                    "Climbing" to
+                        listOf(
+                            "Grade" to HUDSlotField.Grade,
+                            "Elevation" to HUDSlotField.Elevation,
+                            "Ascent" to HUDSlotField.Ascent,
+                            "Descent" to HUDSlotField.Descent,
+                        ),
                     "Navigation" to
                         listOf(
                             "Distance" to HUDSlotField.Distance,

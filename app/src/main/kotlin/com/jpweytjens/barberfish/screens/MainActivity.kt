@@ -1254,7 +1254,8 @@ class MainActivity : ComponentActivity() {
                         FieldCard(
                             title = "RIDE REMAINING",
                             typeId = "remaining-effort",
-                            description = "Distance and ascent remaining, stacked or side by side.",
+                            description =
+                                "Distance, ascent and descent remaining, stacked or side by side.",
                             previewFields = effortPreviewStates,
                             colorMode = ZoneColorMode.NONE,
                             selected = selectedDataField == "RIDE REMAINING",
@@ -1286,6 +1287,29 @@ class MainActivity : ComponentActivity() {
                                         saveEffortFieldConfig(effortFieldConfig)
                                     }
                                 },
+                            )
+                            BoolToggleRow(
+                                label = "DESCENT",
+                                value = effortFieldConfig.showDescent,
+                                onChange = {
+                                    effortFieldConfig = effortFieldConfig.copy(showDescent = it)
+                                    lifecycleScope.launch {
+                                        saveEffortFieldConfig(effortFieldConfig)
+                                    }
+                                },
+                                help = "Add the descent remaining after the ascent.",
+                            )
+                            BoolToggleRow(
+                                label = "HEADER",
+                                value = effortFieldConfig.showHeader,
+                                onChange = {
+                                    effortFieldConfig = effortFieldConfig.copy(showHeader = it)
+                                    lifecycleScope.launch {
+                                        saveEffortFieldConfig(effortFieldConfig)
+                                    }
+                                },
+                                help =
+                                    "Show the field name and icon. Off gives the values its room.",
                             )
                         }
 

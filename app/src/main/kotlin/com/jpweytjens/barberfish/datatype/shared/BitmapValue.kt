@@ -19,9 +19,18 @@ internal const val LETTER_SPACING = -0.04f
 
 /**
  * Prefix glued to the climb value in the stacked Ride Remaining field; rendered as the ascent arrow
- * icon (see [renderTwoRowValueBitmap]).
+ * icon (see [renderStackedValueBitmap]).
  */
 const val ASCENT_MARKER = "↗ "
+
+/** Prefix glued to Ride Remaining's descent value; rendered as the descent arrow icon. */
+const val DESCENT_MARKER = "↘ "
+
+private val VALUE_MARKERS = listOf(ASCENT_MARKER, DESCENT_MARKER)
+
+/** [text] without its leading marker glyph, which an icon replaces. */
+internal fun stripValueMarker(text: String): String =
+    VALUE_MARKERS.firstOrNull { text.startsWith(it) }?.let { text.removePrefix(it) } ?: text
 
 // Bitmap height as a fraction of the value font base sp. Sized to the
 // visible cap (~0.7 × textSize) plus a small buffer; tight enough to fit
@@ -44,32 +53,34 @@ fun valueBitmapHeightPx(valueFontBaseSp: Int, density: Float): Int {
 private const val TWO_ROW_DIGIT_FILL = 0.86f
 
 /**
- * Render two stacked value rows into a full-cell-width `ARGB_8888` bitmap. The two rows share the
- * standard single-row value height ([bitmapHeightPx]) split into two equal bands, so the stacked
- * field keeps the same value footprint as the single-row fields. Each row is aligned to the field
- * edge per [alignment] (matching the single-row fields) and vertically centered in its band. The
- * font is sized so a digit fills [TWO_ROW_DIGIT_FILL] of a band, then shrunk to fit the cell width.
+ * Render stacked value [rows] into a full-cell-width `ARGB_8888` bitmap. The rows share the
+ * standard single-row value height ([bitmapHeightPx]) split into equal bands, so the stacked field
+ * keeps the same value footprint as the single-row fields. Each row is aligned to the field edge
+ * per [alignment] (matching the single-row fields) and vertically centered in its band. The font is
+ * sized so a digit fills [TWO_ROW_DIGIT_FILL] of a band, then shrunk to fit the cell width.
  *
- * Each row may carry a leading icon ([row1Icon] / [row2Icon], pre-tinted) drawn inline before its
- * number as [icon][gap][number] — e.g. the route glyph before the distance and the ascent arrow
- * before the climb in Ride Remaining. A row whose text starts with [marker] has the glyph stripped
- * (the icon replaces it); a row with an icon but no marker keeps its full number. Rows without an
- * icon draw their whole string aligned to the field edge. Both rows are expected to be non-empty.
+ * Each row may carry a leading icon ([icons], pre-tinted, by row) drawn inline before its number as
+ * [icon][gap][number] — e.g. the route glyph before the distance and the ascent arrow before the
+ * climb in Ride Remaining. A row whose text starts with a marker ([ASCENT_MARKER],
+ * [DESCENT_MARKER]) has the glyph stripped (the icon replaces it); a row with an icon but no marker
+ * keeps its full number. Rows without an icon draw their whole string aligned to the field edge.
+ * Every row is expected to be non-empty.
  */
-fun renderTwoRowValueBitmap(
-    row1: String,
-    row2: String,
+// Suppressed: like renderWindArrowValueBitmap and renderHeaderBitmap, one parameter per
+// independent input; no grouping type would earn its keep.
+@Suppress("LongParameterList")
+fun renderStackedValueBitmap(
+    rows: List<String>,
     bitmapHeightPx: Int,
     cellWidthPx: Float,
     color: Int,
     alignment: ViewConfig.Alignment,
     rowGapPx: Float = 4f,
-    marker: String = ASCENT_MARKER,
-    row1Icon: Bitmap? = null,
-    row2Icon: Bitmap? = null,
+    icons: List<Bitmap?> = emptyList(),
 ): Bitmap {
     val width = cellWidthPx.toInt().coerceAtLeast(1)
-    val bandPx = ((bitmapHeightPx - rowGapPx) / 2f).coerceAtLeast(1f)
+    val count = rows.size.coerceAtLeast(1)
+    val bandPx = ((bitmapHeightPx - rowGapPx * (count - 1)) / count).coerceAtLeast(1f)
 
     fun paintAt(sizePx: Float) =
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -84,10 +95,10 @@ fun renderTwoRowValueBitmap(
     paintAt(100f).getTextBounds("0", 0, 1, bounds)
     var fontPx =
         if (bounds.height() > 0) 100f * (bandPx * TWO_ROW_DIGIT_FILL) / bounds.height() else bandPx
-    // Width-fit: shrink so the wider row fits the cell.
+    // Width-fit: shrink so the widest row fits the cell.
     run {
         val p = paintAt(fontPx)
-        val needed = maxOf(p.measureText(row1), p.measureText(row2))
+        val needed = rows.maxOfOrNull { p.measureText(it) } ?: 0f
         if (needed > width) fontPx *= width / needed
     }
     val paint = paintAt(fontPx)
@@ -99,39 +110,27 @@ fun renderTwoRowValueBitmap(
     val canvas = Canvas(bitmap)
 
     // Draw a row vertically centered within the band starting at [bandTop]. With an [icon] it is
-    // drawn as [icon][gap][number] (the [marker] glyph stripped if present); otherwise the whole
+    // drawn as [icon][gap][number] (a marker glyph stripped if present); otherwise the whole
     // string is drawn aligned to the field edge.
     fun drawRow(text: String, bandTop: Float, icon: Bitmap?) {
         val center = bandTop + bandPx / 2f
         if (icon == null) {
-            paint.textAlign =
-                when (alignment) {
-                    ViewConfig.Alignment.LEFT -> Paint.Align.LEFT
-                    ViewConfig.Alignment.CENTER -> Paint.Align.CENTER
-                    ViewConfig.Alignment.RIGHT -> Paint.Align.RIGHT
-                }
-            val xPos =
-                when (alignment) {
-                    ViewConfig.Alignment.LEFT -> 0f
-                    ViewConfig.Alignment.CENTER -> width / 2f
-                    ViewConfig.Alignment.RIGHT -> width.toFloat()
-                }
+            paint.textAlign = alignment.paintAlign()
             paint.getTextBounds(text, 0, text.length, bounds)
-            canvas.drawText(text, xPos, center - (bounds.top + bounds.bottom) / 2f, paint)
+            canvas.drawText(
+                text,
+                alignment.startX(width, 0f),
+                center - (bounds.top + bounds.bottom) / 2f,
+                paint,
+            )
             return
         }
-        val number = if (text.startsWith(marker)) text.removePrefix(marker) else text
+        val number = stripValueMarker(text)
         paint.textAlign = Paint.Align.LEFT
         paint.getTextBounds(number, 0, number.length, bounds)
         val numW = paint.measureText(number)
         val iconSize = bounds.height() * 1.3f
-        val unitW = iconSize + iconGapPx + numW
-        val unitLeft =
-            when (alignment) {
-                ViewConfig.Alignment.LEFT -> 0f
-                ViewConfig.Alignment.CENTER -> (width - unitW) / 2f
-                ViewConfig.Alignment.RIGHT -> width - unitW
-            }
+        val unitLeft = alignment.startX(width, iconSize + iconGapPx + numW)
         val iconTop = center - iconSize / 2f
         canvas.drawBitmap(
             icon,
@@ -146,32 +145,45 @@ fun renderTwoRowValueBitmap(
             paint,
         )
     }
-    drawRow(row1, 0f, row1Icon)
-    drawRow(row2, bandPx + rowGapPx, row2Icon)
+    rows.forEachIndexed { i, row -> drawRow(row, i * (bandPx + rowGapPx), icons.getOrNull(i)) }
     return bitmap
 }
 
-// Share of the value height a digit fills when two values sit side by side, as tall as the
-// single value they replace.
+/** Paint alignment matching the field's [ViewConfig.Alignment]. */
+private fun ViewConfig.Alignment.paintAlign(): Paint.Align =
+    when (this) {
+        ViewConfig.Alignment.LEFT -> Paint.Align.LEFT
+        ViewConfig.Alignment.CENTER -> Paint.Align.CENTER
+        ViewConfig.Alignment.RIGHT -> Paint.Align.RIGHT
+    }
+
+/**
+ * Left edge of content [contentW] wide aligned in [width]. With a zero width it is the anchor a
+ * [paintAlign]-aligned string is drawn at.
+ */
+private fun ViewConfig.Alignment.startX(width: Int, contentW: Float): Float =
+    when (this) {
+        ViewConfig.Alignment.LEFT -> 0f
+        ViewConfig.Alignment.CENTER -> (width - contentW) / 2f
+        ViewConfig.Alignment.RIGHT -> width - contentW
+    }
+
+// Share of the value height a digit fills when values sit side by side, as tall as the single
+// value they replace.
 private const val SIDE_BY_SIDE_DIGIT_FILL = 0.92f
 
-// Gap between the two side-by-side values, and between an icon and its number, in ems.
+// Gap between side-by-side values, and between an icon and its number, in ems.
 private const val SIDE_BY_SIDE_GAP_EM = 0.45f
 private const val SIDE_BY_SIDE_ICON_GAP_EM = 0.12f
 
-/** Two values drawn side by side, each with an optional pre-tinted leading icon. */
-data class SideBySideValues(
-    val first: String,
-    val second: String,
-    val firstIcon: Bitmap? = null,
-    val secondIcon: Bitmap? = null,
-)
+/** Values drawn side by side, each with an optional pre-tinted leading icon ([icons], by value). */
+data class SideBySideValues(val values: List<String>, val icons: List<Bitmap?> = emptyList())
 
 /**
- * Render two values side by side into one value-height bitmap, the horizontal counterpart of
- * [renderTwoRowValueBitmap]: each as [icon][gap][number] (the [ASCENT_MARKER] glyph stripped, the
- * icon replacing it), the pair aligned to the field edge per [alignment] and vertically centred.
- * The font fills the height like a single value and shrinks so the pair fits [cellWidthPx].
+ * Render values side by side into one value-height bitmap, the horizontal counterpart of
+ * [renderStackedValueBitmap]: each as [icon][gap][number] (a marker glyph stripped, the icon
+ * replacing it), the row aligned to the field edge per [alignment] and vertically centred. The font
+ * fills the height like a single value and shrinks so the row fits [cellWidthPx].
  */
 fun renderSideBySideValueBitmap(
     values: SideBySideValues,
@@ -194,8 +206,8 @@ fun renderSideBySideValueBitmap(
     paint.textSize =
         if (zero.height() > 0) 100f * bitmapHeightPx * SIDE_BY_SIDE_DIGIT_FILL / zero.height()
         else bitmapHeightPx.toFloat()
-    val numbers = listOf(values.first, values.second).map { it.removePrefix(ASCENT_MARKER) }
-    val icons = listOf(values.firstIcon, values.secondIcon)
+    val numbers = values.values.map(::stripValueMarker)
+    val icons = numbers.indices.map { values.icons.getOrNull(it) }
     fun totalWidth(): Float {
         paint.getTextBounds("0", 0, 1, zero)
         val icon = zero.height() * 1.1f
@@ -205,7 +217,8 @@ fun renderSideBySideValueBitmap(
                     if (icons[i] != null) icon + paint.textSize * SIDE_BY_SIDE_ICON_GAP_EM else 0f
                 (iconW + paint.measureText(numbers[i])).toDouble()
             }
-        return units.toFloat() + paint.textSize * SIDE_BY_SIDE_GAP_EM
+        val gaps = (numbers.size - 1).coerceAtLeast(0)
+        return units.toFloat() + paint.textSize * SIDE_BY_SIDE_GAP_EM * gaps
     }
     val needed = totalWidth()
     if (needed > width) paint.textSize *= width / needed
@@ -213,13 +226,7 @@ fun renderSideBySideValueBitmap(
     val iconSize = zero.height() * 1.1f
     val centre = bitmapHeightPx / 2f
     val baseline = centre - (zero.top + zero.bottom) / 2f
-    val total = totalWidth()
-    var x =
-        when (alignment) {
-            ViewConfig.Alignment.LEFT -> 0f
-            ViewConfig.Alignment.CENTER -> (width - total) / 2f
-            ViewConfig.Alignment.RIGHT -> width - total
-        }
+    var x = alignment.startX(width, totalWidth())
     val bitmap = createBitmap(width, bitmapHeightPx)
     bitmap.density = Bitmap.DENSITY_NONE
     val canvas = Canvas(bitmap)

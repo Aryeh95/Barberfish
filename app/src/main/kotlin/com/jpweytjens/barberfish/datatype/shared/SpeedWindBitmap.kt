@@ -12,8 +12,9 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.createBitmap
 import com.jpweytjens.barberfish.R
 import io.hammerhead.karooext.models.ViewConfig
+import kotlin.math.abs
 
-/** Gap between the two rows, as in [renderTwoRowValueBitmap]. */
+/** Gap between the two rows, as in [renderStackedValueBitmap]. */
 internal const val SPEED_WIND_ROW_GAP_PX = 4f
 
 /** Share of a row's band a digit fills. Same value as TWO_ROW_DIGIT_FILL in BitmapValue.kt. */
@@ -58,7 +59,7 @@ internal fun speedWindGeometry(bitmapHeightPx: Int, density: Float): SpeedWindGe
  * [windSpeedText], the total wind speed, sits in the arrow column of the top row: wind strength
  * over wind direction. Colour stays on the wind number; speed and arrow take the header colour.
  */
-// Suppressed: matches the sibling renderers (renderWindArrowValueBitmap, renderTwoRowValueBitmap),
+// Suppressed: matches the sibling renderers (renderWindArrowValueBitmap, renderStackedValueBitmap),
 // one parameter per independent input.
 @Suppress("LongParameterList")
 fun renderSpeedWindValueBitmap(
@@ -205,7 +206,9 @@ private fun Canvas.drawWindSpeed(text: String, geo: SpeedWindGeometry, fontPx: F
 
 /**
  * Value height for [field]: the layout's usual value height, plus the header's height when the
- * field draws without its header, so the digits take the whole slot.
+ * field draws without its header, so the digits take the whole slot — never taller than the cell,
+ * less the value's upward nudge and a small margin (a full-width 5-row cell is shorter than the two
+ * together).
  */
 internal fun speedWindBitmapHeightPx(
     field: FieldState,
@@ -213,8 +216,17 @@ internal fun speedWindBitmapHeightPx(
     density: Float,
 ): Int {
     val value = (sizeConfig.valueBitmapHeightDp * density).toInt()
-    return if (field.hideHeader) value + (sizeConfig.headerMinHeightDp * density).toInt() else value
+    if (!field.hideHeader) return value
+    val tall = value + (sizeConfig.headerMinHeightDp * density).toInt()
+    val cap =
+        sizeConfig.cellHeightPx?.let {
+            (it - (abs(sizeConfig.valueTranslationDp) + HEADERLESS_MARGIN_DP) * density).toInt()
+        } ?: tall
+    return minOf(tall, cap).coerceAtLeast(value)
 }
+
+// Space kept between a header-less value and the cell's top edge, in dp.
+private const val HEADERLESS_MARGIN_DP = 2
 
 /** Gap between the header icon and the arrow below it, in dp. */
 internal const val HEADER_ICON_ARROW_GAP_DP = 2f

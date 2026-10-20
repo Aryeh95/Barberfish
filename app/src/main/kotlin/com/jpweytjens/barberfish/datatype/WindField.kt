@@ -102,7 +102,7 @@ class WindField(private val karooSystem: KarooSystemService) :
          * The field's states over time: the fresh reading from the three streams, passed through
          * [heldWindState] with whether the latest fix itself carried a course.
          */
-        // Suppressed: matches the sibling renderers in BitmapValue.kt (renderTwoRowValueBitmap,
+        // Suppressed: matches the sibling renderers in BitmapValue.kt (renderStackedValueBitmap,
         // renderHeaderBitmap): one parameter per independent input, no grouping type earns its
         // keep.
         @Suppress("LongParameterList")

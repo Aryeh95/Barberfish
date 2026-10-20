@@ -6,7 +6,6 @@
     <ID>ComplexCondition:HUDConfigSection.kt:boxWidthPx &lt;= 0 || boxHeightPx &lt;= 0 || !reveal.visible || reveal.counterText != null || !spaceReserved</ID>
     <ID>CyclomaticComplexMethod:AvgSpeedField.kt:internal fun avgSpeedFieldState: FieldState</ID>
     <ID>CyclomaticComplexMethod:BarberfishExtension.kt:BarberfishExtension$override fun startMap</ID>
-    <ID>CyclomaticComplexMethod:BitmapValue.kt:fun renderTwoRowValueBitmap: Bitmap</ID>
     <ID>CyclomaticComplexMethod:CadenceField.kt:internal fun cadenceFieldColor: FieldColor</ID>
     <ID>CyclomaticComplexMethod:ElevationSparkline.kt:internal fun renderElevationSparkline: ElevationSparklineResult</ID>
     <ID>CyclomaticComplexMethod:ElevationSparkline.kt:private fun vwSimplify: List&lt;Pair&lt;Float, Float&gt;&gt;</ID>
@@ -60,7 +59,6 @@
     <ID>LongParameterList:BarberfishView.kt:fun barberfishFieldRemoteViews: RemoteViews</ID>
     <ID>LongParameterList:BarberfishView.kt:private fun applyHeaderChrome: Int</ID>
     <ID>LongParameterList:BitmapValue.kt:fun renderHeaderBitmap: Bitmap</ID>
-    <ID>LongParameterList:BitmapValue.kt:fun renderTwoRowValueBitmap: Bitmap</ID>
     <ID>LongParameterList:BitmapValue.kt:fun renderValueBitmap: Bitmap</ID>
     <ID>LongParameterList:ChevronPlacement.kt:internal fun placeChevronsByCadence: List&lt;ChevronPlacement&gt;</ID>
     <ID>LongParameterList:DynamicFontSp.kt:fun fontSizeForCell: Pair&lt;Int, Int&gt;</ID>

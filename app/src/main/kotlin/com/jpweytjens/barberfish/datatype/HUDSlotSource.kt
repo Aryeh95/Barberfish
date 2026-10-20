@@ -222,6 +222,18 @@ class HUDSlotSource(private val karooSystem: KarooSystemService) {
                 karooSystem.streamDataFlow(ValueKind.DESCENT_REMAINING.sourceType).map {
                     ValueField.toFieldState(it, ValueKind.DESCENT_REMAINING, profile)
                 }
+            HUDSlotField.Ascent ->
+                karooSystem.streamDataFlow(ValueKind.ASCENT.sourceType).map {
+                    ValueField.toFieldState(it, ValueKind.ASCENT, profile)
+                }
+            HUDSlotField.Descent ->
+                karooSystem.streamDataFlow(ValueKind.DESCENT.sourceType).map {
+                    ValueField.toFieldState(it, ValueKind.DESCENT, profile)
+                }
+            HUDSlotField.Elevation ->
+                karooSystem.streamDataFlow(ValueKind.ELEVATION.sourceType).map {
+                    ValueField.toFieldState(it, ValueKind.ELEVATION, profile)
+                }
             is HUDSlotField.AvgSpeed ->
                 AvgSpeedField.streamFlow(
                     karooSystem,
@@ -388,6 +400,9 @@ class HUDSlotSource(private val karooSystem: KarooSystemService) {
                     ValueField.previewStates(ValueKind.ELEVATION_REMAINING, profile)
                 HUDSlotField.DescentRemaining ->
                     ValueField.previewStates(ValueKind.DESCENT_REMAINING, profile)
+                HUDSlotField.Ascent -> ValueField.previewStates(ValueKind.ASCENT, profile)
+                HUDSlotField.Descent -> ValueField.previewStates(ValueKind.DESCENT, profile)
+                HUDSlotField.Elevation -> ValueField.previewStates(ValueKind.ELEVATION, profile)
                 is HUDSlotField.Time -> TimeField.previewStates(timeCfg, field.kind)
                 is HUDSlotField.ETA -> ETAField.previewStates(field.kind, timeCfg.format)
             }

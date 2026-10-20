@@ -90,4 +90,35 @@ class ValueFieldStateTest {
         val s = ValueField.toFieldState(StreamState.NotAvailable, ValueKind.DISTANCE, metricProfile)
         assertEquals("Not available", s.primary)
     }
+
+    @Test
+    fun `ascent, descent and elevation read their streams and need no route`() {
+        val ascent =
+            ValueField.toFieldState(
+                streaming(ValueKind.ASCENT, mapOf(DataType.Field.ELEVATION_GAIN to 862.6)),
+                ValueKind.ASCENT,
+                metricProfile,
+            )
+        assertEquals("863", ascent.primary)
+        assertEquals("Ascent", ascent.label)
+        val descent =
+            ValueField.toFieldState(
+                streaming(ValueKind.DESCENT, mapOf(DataType.Field.ELEVATION_LOSS to 811.0)),
+                ValueKind.DESCENT,
+                metricProfile,
+            )
+        assertEquals("811", descent.primary)
+        assertEquals("Descent", descent.label)
+        val elevation =
+            ValueField.toFieldState(
+                streaming(ValueKind.ELEVATION, mapOf(DataType.Field.PRESSURE_ELEVATION to -12.4)),
+                ValueKind.ELEVATION,
+                metricProfile,
+            )
+        assertEquals("-12", elevation.primary)
+        assertEquals("0", ValueKind.ELEVATION.format(-0.3))
+        val missing =
+            ValueField.toFieldState(StreamState.NotAvailable, ValueKind.ASCENT, metricProfile)
+        assertEquals("Not available", missing.primary)
+    }
 }
