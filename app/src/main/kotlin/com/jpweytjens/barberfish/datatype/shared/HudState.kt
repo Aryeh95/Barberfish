@@ -26,10 +26,15 @@ fun HUDState.visibleColumns(): List<Int> = visibleSlots(slots)
 
 /**
  * Indices of [slots] a multi-slot field renders: every slot except those whose sensor is not paired
- * ([FieldState.noSensor]). When no slot is paired nothing is dropped, so the field shows its
+ * ([FieldState.noSensor]) and, with [dropNoRoute] (the Doubles), those waiting for a route
+ * ([FieldState.noRoute]). When every slot would drop nothing is dropped, so the field shows its
  * placeholders instead of rendering empty.
  */
-fun visibleSlots(slots: List<SlotState>): List<Int> {
-    val paired = slots.indices.filterNot { slots[it].field.noSensor }
-    return paired.ifEmpty { slots.indices.toList() }
+fun visibleSlots(slots: List<SlotState>, dropNoRoute: Boolean = false): List<Int> {
+    val shown =
+        slots.indices.filterNot {
+            val field = slots[it].field
+            field.noSensor || (dropNoRoute && field.noRoute)
+        }
+    return shown.ifEmpty { slots.indices.toList() }
 }

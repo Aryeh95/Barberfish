@@ -10,6 +10,7 @@ Barberfish+, a personal fork of Barberfish 4.0:
 - Double 1 to 8: two fields in one cell, side by side or stacked, each half any HUD slot with its options, labelled by icon, header, both or nothing, and set up in a new Double fields section
 - Ride Remaining can show the distance and ascent side by side as well as stacked, add the descent remaining as a third value, and hide its header to give the values more room
 - Elevation, Ascent and Descent as HUD and Double slots, so the colored Grade and the current elevation can share a cell
+- With no route loaded, a Double's navigation half drops out and the other value fills the cell
 - Avg Cadence, Lap Avg Cadence, Last Lap Avg Cadence and Max Cadence, as fields and as HUD slots, with Cadence's threshold coloring
 
 ## 4.0

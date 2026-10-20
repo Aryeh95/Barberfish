@@ -21,7 +21,7 @@ import com.jpweytjens.barberfish.datatype.shared.slots
 import com.jpweytjens.barberfish.datatype.shared.toColorConfig
 import com.jpweytjens.barberfish.datatype.shared.toDoubleSlotSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.toViewSizeConfig
-import com.jpweytjens.barberfish.datatype.shared.visibleSlots
+import com.jpweytjens.barberfish.datatype.shared.visibleHalves
 import com.jpweytjens.barberfish.datatype.shared.withDoubleLabel
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.DoubleFieldConfig
@@ -140,7 +140,7 @@ fun doubleRemoteViews(
     context: Context,
 ): RemoteViews {
     val density = context.resources.displayMetrics.density
-    val visible = visibleSlots(state.slots)
+    val visible = state.visibleHalves()
     val rv =
         when (state.layout()) {
             DoubleLayout.FIELD -> {
@@ -195,7 +195,7 @@ private fun panelRemoteViews(
     val isNightMode =
         (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
             Configuration.UI_MODE_NIGHT_YES
-    val visible = visibleSlots(state.slots)
+    val visible = state.visibleHalves()
     val stacked = layoutRes == R.layout.barberfish_double_rows
     // The cell's own native sizes bound the label block and the value.
     val cell = config.toViewSizeConfig(design = design)

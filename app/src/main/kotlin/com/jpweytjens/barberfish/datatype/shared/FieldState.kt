@@ -25,6 +25,9 @@ data class FieldState(
     // true only for the "No sensor" state: the source sensor is not paired at all. The HUD
     // drops such a slot's column. Searching and idle states keep theirs.
     val noSensor: Boolean = false,
+    // true only for the "No route" state: a navigation value with no route loaded. A Double
+    // drops such a half, the other taking the cell. Off route keeps it: a route is loaded.
+    val noRoute: Boolean = false,
     // The wind field's arrow: degrees clockwise from up, up being the rider's direction of
     // travel (0 tailwind, 180 headwind). Null for every other field and for calm.
     val windArrowDeg: Float? = null,
@@ -64,7 +67,13 @@ data class FieldState(
             )
 
         fun noRoute(label: String = "", iconRes: Int? = null) =
-            FieldState("No route", label, FieldColor.StreamState, iconRes = iconRes)
+            FieldState(
+                "No route",
+                label,
+                FieldColor.StreamState,
+                iconRes = iconRes,
+                noRoute = true,
+            )
 
         fun offRoute(label: String = "", iconRes: Int? = null) =
             FieldState("Off route", label, FieldColor.StreamState, iconRes = iconRes)

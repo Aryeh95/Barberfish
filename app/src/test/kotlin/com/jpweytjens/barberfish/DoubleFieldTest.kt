@@ -14,6 +14,7 @@ import com.jpweytjens.barberfish.datatype.shared.effectiveSlot
 import com.jpweytjens.barberfish.datatype.shared.layout
 import com.jpweytjens.barberfish.datatype.shared.slots
 import com.jpweytjens.barberfish.datatype.shared.toDoubleSlotSizeConfig
+import com.jpweytjens.barberfish.datatype.shared.visibleHalves
 import com.jpweytjens.barberfish.datatype.shared.visibleSlots
 import com.jpweytjens.barberfish.datatype.shared.windSpeedApplies
 import com.jpweytjens.barberfish.datatype.shared.withDoubleLabel
@@ -65,6 +66,8 @@ class DoubleFieldTest {
     private val live = SlotState(FieldState("142", "HR", FieldColor.Default), ZoneColorMode.TEXT)
     private val unpaired = SlotState(FieldState.noSensor("Power"), ZoneColorMode.TEXT)
     private val searching = SlotState(FieldState.searching("Power"), ZoneColorMode.TEXT)
+    private val noRoute = SlotState(FieldState.noRoute("Ascent\nRemaining"), ZoneColorMode.TEXT)
+    private val offRoute = SlotState(FieldState.offRoute("Dist\nRemaining"), ZoneColorMode.TEXT)
 
     private fun double(
         first: SlotState,
@@ -303,5 +306,26 @@ class DoubleFieldTest {
         assertTrue(sideBySide.effectiveSlot(wind).windShowSpeed)
         val noLabel = sideBySide.copy(label = DoubleLabel.NONE)
         assertFalse(noLabel.effectiveSlot(wind).windShowSpeed)
+    }
+
+    @Test
+    fun `a half waiting for a route drops out and the other fills the cell`() {
+        for (orientation in FieldOrientation.entries) {
+            val state = double(live, noRoute, orientation)
+            assertEquals(listOf(0), state.visibleHalves())
+            assertEquals(DoubleLayout.FIELD, state.layout())
+        }
+        assertEquals(listOf(1), double(noRoute, live).visibleHalves())
+    }
+
+    @Test
+    fun `both halves waiting for a route stay, as do off-route halves`() {
+        assertEquals(listOf(0, 1), double(noRoute, noRoute).visibleHalves())
+        assertEquals(listOf(0, 1), double(live, offRoute).visibleHalves())
+    }
+
+    @Test
+    fun `the HUD keeps a column waiting for a route`() {
+        assertEquals(listOf(0, 1), visibleSlots(listOf(live, noRoute)))
     }
 }

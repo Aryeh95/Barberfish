@@ -29,13 +29,18 @@ enum class DoubleLayout {
 }
 
 /**
- * The layout for this state. A slot whose sensor is not paired drops out and the other takes the
- * whole cell, as a HUD column does; with both unpaired both stay (see [visibleSlots]). Labels sit
- * above the values side by side and beside them when stacked; with no label the values are drawn
- * alone, side by side or (one left) filling the cell.
+ * The halves this Double draws: a half whose sensor is not paired, or that shows a navigation value
+ * with no route loaded, drops out; with both dropping both stay (see [visibleSlots]).
+ */
+fun DoubleState.visibleHalves(): List<Int> = visibleSlots(slots, dropNoRoute = true)
+
+/**
+ * The layout for this state. A half that drops out (see [visibleHalves]) leaves the other the whole
+ * cell, as a HUD column does. Labels sit above the values side by side and beside them when
+ * stacked; with no label the values are drawn alone, side by side or (one left) filling the cell.
  */
 fun DoubleState.layout(): DoubleLayout {
-    val visible = visibleSlots(slots).size
+    val visible = visibleHalves().size
     return when {
         label == DoubleLabel.NONE && (visible == 1 || orientation == FieldOrientation.HORIZONTAL) ->
             DoubleLayout.VALUES

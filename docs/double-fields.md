@@ -35,3 +35,7 @@ Values are sized to fit their half of the cell, so long ones like `1h23'45"` or 
 ## Missing sensors
 
 As in the HUD, a value whose sensor goes missing keeps its place while the Karoo searches for it. Once the Karoo gives up the value drops out and the other takes the whole cell, drawn like a standalone field. If both are missing, both stay.
+
+## No route
+
+A navigation value (distance, ascent or descent remaining, time to destination, ETA) drops out the same way while no route is loaded, so Ascent and Ascent remaining shows just the ascent, full size, on a ride without a route. Once a route is loaded it comes back. Off route it stays and says so. If both values need a route, both stay.
