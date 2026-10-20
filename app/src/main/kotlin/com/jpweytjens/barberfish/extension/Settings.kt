@@ -201,6 +201,8 @@ private val doubleFieldDefaults: List<Pair<HUDSlotField, HUDSlotField>> =
         HUDSlotField.LapPower to HUDSlotField.LapAvgHR,
         HUDSlotField.NP to HUDSlotField.AvgHR,
         HUDSlotField.Grade to HUDSlotField.DistanceRemaining,
+        HUDSlotField.Descent to HUDSlotField.DescentRemaining,
+        HUDSlotField.Grade to HUDSlotField.Elevation,
     )
 
 /** One of the Double fields, numbered from 1 (see [entries]). */

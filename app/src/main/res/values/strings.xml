@@ -11,6 +11,8 @@
     <string name="double_4_name">Double 4</string>
     <string name="double_5_name">Double 5</string>
     <string name="double_6_name">Double 6</string>
+    <string name="double_7_name">Double 7</string>
+    <string name="double_8_name">Double 8</string>
     <string name="double_description">Two data fields in one, side by side or stacked, set up in the Barberfish+ settings</string>
     <string name="power_name">Power</string>
     <string name="power_description">Current power output with smoothing and zone coloring</string>

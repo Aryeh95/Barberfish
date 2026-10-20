@@ -1,6 +1,6 @@
 # Double fields
 
-A Double puts two fields in one cell, side by side or one above the other. There are six of them, Double 1 to Double 6, each set up on its own, so a page can carry Power and HR in one cell and Speed and Cadence in the next. They are listed with the other Barberfish fields under Extensions when you edit a data page.
+A Double puts two fields in one cell, side by side or one above the other. There are eight of them, Double 1 to Double 8, each set up on its own, so a page can carry Power and HR in one cell and Speed and Cadence in the next. They are listed with the other Barberfish fields under Extensions when you edit a data page.
 
 Out of the box they show, side by side with icon and header:
 

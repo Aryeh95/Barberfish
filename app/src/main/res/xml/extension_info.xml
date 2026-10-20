@@ -47,6 +47,18 @@
         displayName="@string/double_6_name"
         description="@string/double_description"
         graphical="true" />
+    <DataType
+        icon="@drawable/ic_double"
+        typeId="double-7"
+        displayName="@string/double_7_name"
+        description="@string/double_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_double"
+        typeId="double-8"
+        displayName="@string/double_8_name"
+        description="@string/double_description"
+        graphical="true" />
     <!-- Power -->
     <DataType
         icon="@drawable/ic_col_power"

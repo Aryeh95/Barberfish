@@ -181,12 +181,13 @@ class DoubleFieldTest {
     }
 
     @Test
-    fun `six Doubles, each with its own key, type id and default slots`() {
+    fun `eight Doubles, each with its own key, type id and default slots`() {
         val kinds = DoubleFieldKind.entries
-        assertEquals(6, kinds.size)
-        assertEquals((1..6).map { "double-$it" }, kinds.map { it.typeId })
-        assertEquals((1..6).map { "double_field_${it}_config" }, kinds.map { it.key.name })
-        assertEquals((1..6).map { "Double $it" }, kinds.map { it.title })
+        assertEquals(8, kinds.size)
+        // Doubles 1 to 6 keep the keys and type ids they were saved and placed under.
+        assertEquals((1..8).map { "double-$it" }, kinds.map { it.typeId })
+        assertEquals((1..8).map { "double_field_${it}_config" }, kinds.map { it.key.name })
+        assertEquals((1..8).map { "Double $it" }, kinds.map { it.title })
         assertEquals(
             listOf(
                 HUDSlotField.Power to HUDSlotField.HR,
@@ -195,6 +196,8 @@ class DoubleFieldTest {
                 HUDSlotField.LapPower to HUDSlotField.LapAvgHR,
                 HUDSlotField.NP to HUDSlotField.AvgHR,
                 HUDSlotField.Grade to HUDSlotField.DistanceRemaining,
+                HUDSlotField.Descent to HUDSlotField.DescentRemaining,
+                HUDSlotField.Grade to HUDSlotField.Elevation,
             ),
             kinds.map { it.default.first.field to it.default.second.field },
         )
