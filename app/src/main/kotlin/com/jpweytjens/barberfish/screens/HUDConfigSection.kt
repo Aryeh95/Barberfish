@@ -556,6 +556,9 @@ private fun SparklineModeToggle(mode: SparklineMode, onSelect: (SparklineMode) -
 }
 
 // Slot fields that take a zone or threshold color, and so show the ZONE COLOR control.
+private val TIRE_SLOT_FIELDS: Set<HUDSlotField> =
+    setOf(HUDSlotField.FrontTire, HUDSlotField.RearTire)
+
 private val ZONE_COLORED_SLOT_FIELDS: Set<HUDSlotField> =
     setOf(
         HUDSlotField.Power,
@@ -645,10 +648,16 @@ internal fun HUDSlotFieldCard(
                 HUDSlotField.Ascent -> {}
                 HUDSlotField.Descent -> {}
                 HUDSlotField.Elevation -> {}
+                HUDSlotField.FrontTire,
+                HUDSlotField.RearTire -> TireControls(slot, onUpdate)
                 is HUDSlotField.Time -> {}
                 is HUDSlotField.ETA -> {}
             }
-            if (slot.field in ZONE_COLORED_SLOT_FIELDS || slot.field.cadenceStatKind != null) {
+            if (
+                slot.field in ZONE_COLORED_SLOT_FIELDS ||
+                    slot.field.cadenceStatKind != null ||
+                    slot.field in TIRE_SLOT_FIELDS
+            ) {
                 ZoneColorSlider(
                     selected = slot.colorMode,
                     onSelected = { onUpdate(slot.copy(colorMode = it)) },
@@ -698,6 +707,8 @@ internal fun HUDSlotField.displayName(): String =
         HUDSlotField.Ascent -> "Ascent"
         HUDSlotField.Descent -> "Descent"
         HUDSlotField.Elevation -> "Elevation"
+        HUDSlotField.FrontTire -> "Front tire pressure"
+        HUDSlotField.RearTire -> "Rear tire pressure"
         is HUDSlotField.Time -> f.kind.label.replace("\n", " ")
         is HUDSlotField.ETA -> f.kind.label.replace("\n", " ")
     }
@@ -770,6 +781,11 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
                             "Distance remaining" to HUDSlotField.DistanceRemaining,
                             "Ascent remaining" to HUDSlotField.ElevationRemaining,
                             "Descent remaining" to HUDSlotField.DescentRemaining,
+                        ),
+                    "Tires (Outrider)" to
+                        listOf(
+                            "Front tire pressure" to HUDSlotField.FrontTire,
+                            "Rear tire pressure" to HUDSlotField.RearTire,
                         ),
                     "Time" to
                         listOf(

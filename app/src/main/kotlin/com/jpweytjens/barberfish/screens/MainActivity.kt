@@ -162,6 +162,7 @@ import com.jpweytjens.barberfish.extension.HRFieldKind
 import com.jpweytjens.barberfish.extension.HRMaxPercentFieldConfig
 import com.jpweytjens.barberfish.extension.HRZoneFieldConfig
 import com.jpweytjens.barberfish.extension.HUDConfig
+import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.LabelSize
 import com.jpweytjens.barberfish.extension.LapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.MaxHRFieldConfig
@@ -180,6 +181,7 @@ import com.jpweytjens.barberfish.extension.SpeedThresholdSource
 import com.jpweytjens.barberfish.extension.ThresholdMode
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.TimeFormat
+import com.jpweytjens.barberfish.extension.TirePressureUnit
 import com.jpweytjens.barberfish.extension.WindFieldConfig
 import com.jpweytjens.barberfish.extension.WindSockConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
@@ -2547,6 +2549,44 @@ internal fun CadenceThresholdControls(
         above = config.rangePercentAbove,
         onBelowChange = { onConfigChange(config.copy(rangePercentBelow = it)) },
         onAboveChange = { onConfigChange(config.copy(rangePercentAbove = it)) },
+    )
+}
+
+private val PRESSURE_INPUT_UNIT =
+    InputUnit(
+        format = { "%.2f".format(Locale.ROOT, it).trimEnd('0').trimEnd('.') },
+        parse = { it },
+        keyboardType = KeyboardType.Decimal,
+    )
+
+/**
+ * A tire slot's unit, matching the Outrider app's, and its target coloring: green within one step
+ * of the target, then yellow, orange and red each step further, above or below.
+ */
+@Composable
+internal fun TireControls(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
+    ChoiceRow(
+        label = "UNIT",
+        options = TirePressureUnit.entries.map { it to it.label },
+        selected = slot.tireUnit,
+        onSelect = { onUpdate(slot.copy(tireUnit = it)) },
+        help = "The unit set in the Outrider app. The sensor sends its pressure in it.",
+    )
+    ControlLabel("TARGET (${slot.tireUnit.label})")
+    NumberInput(
+        value = slot.tireTarget,
+        unit = PRESSURE_INPUT_UNIT,
+        placeholder = "Target (${slot.tireUnit.label}), empty for no color",
+        onValueChange = { onUpdate(slot.copy(tireTarget = it)) },
+    )
+    ControlLabel("STEP (%)")
+    RangeInput(
+        value = slot.tireBandPercent,
+        onValueChange = { onUpdate(slot.copy(tireBandPercent = it)) },
+    )
+    HelperText(
+        "Green within one step of the target, then yellow, orange and red each step further, " +
+            "above or below."
     )
 }
 

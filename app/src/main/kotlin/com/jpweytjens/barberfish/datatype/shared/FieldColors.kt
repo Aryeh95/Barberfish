@@ -49,6 +49,11 @@ internal val RDYLGN_RED_READABLE_DARK = Color(0xFFF5645F)
 internal val RDYLGN_GREEN_READABLE_DARK = Color(0xFF1EAA5A)
 internal val DANGER_ORANGE_READABLE_LIGHT = Color(0xFFED9800)
 
+// The Deviation scale's yellow step: RdYlGn's yellow as a fill and as text on black, and a
+// darker gold that stays readable as text on the day theme's white.
+internal val DEVIATION_YELLOW = Color(0xFFFEE08B)
+internal val DEVIATION_YELLOW_READABLE_LIGHT = Color(0xFFA67C00)
+
 // Sparkline palette — used by ElevationSparkline rendering. Call sites pass to Paint.color
 // via .toArgb() since android.graphics.Paint expects an Int, not a Compose Color.
 internal val SPARKLINE_PAST_OUTLINE = Color(0xFF646464) // grey for past stroke + past POI fill
@@ -190,7 +195,23 @@ internal fun FieldColor.toBackgroundColor(): Color? =
             if (isHr) hrZoneColor(zone, palette, readable = false)
             else powerZoneColor(zone, palette, readable = false)
         is FieldColor.Grade -> gradeColor(percent, palette, readable = false)
+        is FieldColor.Deviation -> deviationColor(band, isNightMode = true, readable = false)
     }
+
+/**
+ * A [FieldColor.Deviation] band's color: green, yellow, orange, then red. [readable] picks the text
+ * variants, legible on the theme's own background; fills use the plain colors.
+ */
+private fun deviationColor(band: Int, isNightMode: Boolean, readable: Boolean): Color {
+    val day = readable && !isNightMode
+    val night = readable && isNightMode
+    return when {
+        band <= 0 -> if (night) RDYLGN_GREEN_READABLE_DARK else RDYLGN_GREEN
+        band == 1 -> if (day) DEVIATION_YELLOW_READABLE_LIGHT else DEVIATION_YELLOW
+        band == 2 -> if (day) DANGER_ORANGE_READABLE_LIGHT else DANGER_ORANGE
+        else -> if (night) RDYLGN_RED_READABLE_DARK else RDYLGN_RED
+    }
+}
 
 // Text mode draws the palette color directly on the datafield bg, so use
 // the HSLuv-corrected variant — dark-readable on #000000 in night mode,
@@ -209,6 +230,7 @@ internal fun FieldColor.toColor(isNightMode: Boolean = true): Color? =
             else powerZoneColor(zone, palette, readable = true, isNightMode = isNightMode)
         is FieldColor.Grade ->
             gradeColor(percent, palette, readable = true, isNightMode = isNightMode)
+        is FieldColor.Deviation -> deviationColor(band, isNightMode, readable = true)
     }
 
 internal fun FieldColor.toColorConfig(

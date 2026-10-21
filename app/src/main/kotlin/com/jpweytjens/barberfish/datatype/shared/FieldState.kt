@@ -123,6 +123,10 @@ sealed interface FieldColor {
 
     // percent: grade as a percentage (e.g. 5.0 = 5%). Coloring based on gradient palette.
     data class Grade(val percent: Double, val palette: GradePalette) : FieldColor
+
+    // band: how many steps a value is from its target either way. 0 green (on target), 1
+    // yellow, 2 orange, 3 and beyond red. Tire pressure, where too high is as bad as too low.
+    data class Deviation(val band: Int) : FieldColor
 }
 
 fun zoneFieldColor(

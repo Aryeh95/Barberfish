@@ -217,6 +217,8 @@ class HUDSlotSource(private val karooSystem: KarooSystemService) {
             HUDSlotField.Descent -> ValueField.liveStates(karooSystem, ValueKind.DESCENT, profile)
             HUDSlotField.Elevation ->
                 ValueField.liveStates(karooSystem, ValueKind.ELEVATION, profile)
+            HUDSlotField.FrontTire -> TirePressure.liveStates(karooSystem, TirePosition.FRONT, slot)
+            HUDSlotField.RearTire -> TirePressure.liveStates(karooSystem, TirePosition.REAR, slot)
             is HUDSlotField.AvgSpeed ->
                 AvgSpeedField.streamFlow(
                     karooSystem,
@@ -386,6 +388,8 @@ class HUDSlotSource(private val karooSystem: KarooSystemService) {
                 HUDSlotField.Ascent -> ValueField.previewStates(ValueKind.ASCENT, profile)
                 HUDSlotField.Descent -> ValueField.previewStates(ValueKind.DESCENT, profile)
                 HUDSlotField.Elevation -> ValueField.previewStates(ValueKind.ELEVATION, profile)
+                HUDSlotField.FrontTire -> TirePressure.previewStates(TirePosition.FRONT, slotCfg)
+                HUDSlotField.RearTire -> TirePressure.previewStates(TirePosition.REAR, slotCfg)
                 is HUDSlotField.Time -> TimeField.previewStates(timeCfg, field.kind)
                 is HUDSlotField.ETA -> ETAField.previewStates(field.kind, timeCfg.format)
             }

@@ -129,6 +129,10 @@ sealed interface HUDSlotField {
 
     @Serializable data object Elevation : HUDSlotField
 
+    @Serializable data object FrontTire : HUDSlotField
+
+    @Serializable data object RearTire : HUDSlotField
+
     @Serializable data class AvgSpeed(val includePaused: Boolean = false) : HUDSlotField
 
     @Serializable data class Time(val kind: TimeKind = TimeKind.TOTAL) : HUDSlotField
@@ -153,7 +157,24 @@ data class HUDSlotConfig(
     // Wind slot with Show speed: Barberfish's stacked layout or Headwind's, and its header.
     val windLayout: WindLayout = WindLayout.BARBERFISH,
     val windShowHeader: Boolean = true,
+    // Tire slots only: the unit set in the Outrider app, which the sensor's value arrives in.
+    val tireUnit: TirePressureUnit = TirePressureUnit.PSI,
+    // Tire slots only: the target pressure in [tireUnit] (0 leaves the value uncolored), and the
+    // step, as a percentage of it, between the green, yellow, orange and red bands.
+    val tireTarget: Double = 0.0,
+    val tireBandPercent: Double = 10.0,
 )
+
+/**
+ * A tire pressure unit as the Outrider app offers them, with the decimals it shows each in and the
+ * factor from PSI.
+ */
+@Serializable
+enum class TirePressureUnit(val label: String, val decimals: Int, val fromPsi: Double) {
+    PSI("PSI", 1, 1.0),
+    BAR("bar", 2, 0.0689476),
+    KPA("kPa", 0, 6.89476),
+}
 
 // --- DoubleFieldConfig ---
 // The three Double fields: two HUD slot configs in one Karoo cell, side by side or stacked. Each

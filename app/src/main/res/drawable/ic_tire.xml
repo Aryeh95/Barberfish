@@ -1,0 +1,17 @@
+<!-- A tire seen from the side: the tread ring and the hub. Drawn for the
+     tire pressure slots; white, tinted at runtime like the other field icons. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="38dp"
+    android:height="38dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Tread ring: outer radius 10, inner radius 6.5. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M12,2A10,10 0 1,1 12,22A10,10 0 1,1 12,2ZM12,5.5A6.5,6.5 0 1,0 12,18.5A6.5,6.5 0 1,0 12,5.5Z" />
+    <!-- Hub. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,9.5A2.5,2.5 0 1,1 12,14.5A2.5,2.5 0 1,1 12,9.5Z" />
+</vector>

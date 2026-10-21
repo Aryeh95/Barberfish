@@ -12,6 +12,8 @@ A personal fork of [Barberfish](https://github.com/jpweytjens/Barberfish) with i
 - Ride Remaining can add the descent left as a third value, lay its values side by side, and hide
   its header.
 - Distance, Ascent and Descent read 0 before the ride and hold their total while paused.
+- Front and Rear tire pressure slots for Outrider TL sensors, read from the Outrider extension,
+  colored by how far the pressure is from a target.
 - The Wind field, HUD slot and map windsock from the developer's unreleased wind work, with
   **Show speed** and a Headwind-style layout on the Wind slot (needs the Headwind extension).
 

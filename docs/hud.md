@@ -17,7 +17,7 @@ On a data page the rows are shorter and the page has room of its own, so turn th
 
 ## Slots
 
-A slot holds power, heart rate, speed, cadence, grade, elevation, ascent, descent, distance, time, or ETA, in the variants each comes in, from 3s Power to Lap Avg HR and Max Cadence. Tap a column in the preview to pick its field and set its smoothing, zone coloring, and format, the same options as the standalone field ([every field and its options](data-fields.md)), kept per slot. Tap the strip to set the profile's mode and shape. The same slots fill the two halves of the [Double fields](double-fields.md).
+A slot holds power, heart rate, speed, cadence, grade, elevation, ascent, descent, distance, tire pressure (Outrider sensors), time, or ETA, in the variants each comes in, from 3s Power to Lap Avg HR and Max Cadence. Tap a column in the preview to pick its field and set its smoothing, zone coloring, and format, the same options as the standalone field ([every field and its options](data-fields.md)), kept per slot. Tap the strip to set the profile's mode and shape. The same slots fill the two halves of the [Double fields](double-fields.md).
 
 <img src="screenshots/hud_config.jpg" alt="HUD config with a 4-column live preview and the Power column selected, its data field, smoothing, and zone color options below" width="480">
 

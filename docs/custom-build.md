@@ -18,6 +18,12 @@ under its own package, `io.github.aryeh95.barberfish`.
   a Header switch.
 - **Ride totals** (Distance, Ascent, Descent) read 0 before the ride and keep their last value
   while their stream is idle, instead of "No data".
+- **Tire pressure** slots, Front and Rear, for Outrider TL sensors. They read the streams the
+  Outrider extension publishes for its paired sensors (`Outrider/outrider-front` and
+  `outrider-rear`, the gauge pressure in the unit set in the Outrider app), so the Outrider
+  extension must be installed with the sensors paired; set the slot's Unit to match it. A
+  target colors the value green within one step, then yellow, orange and red each step
+  further, above or below.
 - Header labels in narrow HUD and Double slots shrink to keep a long word whole, and a value
   drawn without its header never outgrows its cell.
 
