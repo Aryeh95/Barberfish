@@ -144,4 +144,18 @@ class TirePressureTest {
             )
         assertEquals(FieldColor.Deviation(2), s.color)
     }
+
+    @Test
+    fun `a held value keeps its number in grey, the icon not live`() {
+        val held =
+            TirePressure.heldState(
+                68.44,
+                TirePosition.FRONT,
+                slot(TirePressureUnit.PSI, target = 70.0),
+            )
+        assertEquals("68.4", held.primary)
+        assertEquals(FieldColor.Muted, held.color)
+        assertEquals(false, held.liveIcon)
+        assertEquals(false, held.noSensor)
+    }
 }

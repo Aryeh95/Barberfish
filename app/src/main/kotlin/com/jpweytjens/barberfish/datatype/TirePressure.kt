@@ -11,8 +11,10 @@ import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
 import kotlin.math.abs
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.transformLatest
 
 /**
  * The Outrider extension's id. It pairs each Outrider TL tire pressure sensor as a Karoo sensor
@@ -33,12 +35,37 @@ enum class TirePosition(typeId: String, val label: String, val previewPsi: List<
 object TirePressure {
     private val ICON = R.drawable.ic_tire
 
+    /** How long a sensor's last value is held, grey, while it reconnects. */
+    internal const val HOLD_MS = 10 * 60_000L
+
+    /**
+     * Live states for [position]. While the sensor reconnects (Searching or Idle) its last value
+     * stays on screen in grey for up to [HOLD_MS], rather than flipping to "Searching…" at every
+     * dropout; a sensor that is not paired still reads "No sensor" straight away.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun liveStates(
         karooSystem: KarooSystemService,
         position: TirePosition,
         slot: HUDSlotConfig,
-    ): Flow<FieldState> =
-        karooSystem.streamDataFlow(position.streamId).map { toFieldState(it, position, slot) }
+    ): Flow<FieldState> {
+        var lastRaw: Double? = null
+        return karooSystem.streamDataFlow(position.streamId).transformLatest { state ->
+            val raw =
+                (state as? StreamState.Streaming)?.dataPoint?.values?.get(DataType.Field.SINGLE)
+            if (raw != null) lastRaw = raw
+            val held = lastRaw
+            if (held != null && (state is StreamState.Searching || state is StreamState.Idle)) {
+                emit(heldState(held, position, slot))
+                delay(HOLD_MS)
+            }
+            emit(toFieldState(state, position, slot))
+        }
+    }
+
+    /** A sensor's last value while it reconnects: the value, in grey. */
+    fun heldState(value: Double, position: TirePosition, slot: HUDSlotConfig): FieldState =
+        valueState(value, position, slot).copy(color = FieldColor.Muted, liveIcon = false)
 
     /**
      * [state] as a field. A sensor that is not paired, or Outrider not installed, reads "No

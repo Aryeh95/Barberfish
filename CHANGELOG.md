@@ -12,7 +12,7 @@ Barberfish+, a personal fork of Barberfish 4.0:
 - Elevation, Ascent and Descent as HUD and Double slots, so the colored Grade and the current elevation can share a cell
 - With no route loaded, a Double's navigation half drops out and the other value fills the cell
 - Distance, Ascent and Descent read 0 before the ride starts and keep their total while paused, instead of No data
-- Front and Rear tire pressure HUD and Double slots for Outrider TL sensors (needs the Outrider extension), colored green, yellow, orange and red by how far the pressure is from a target
+- Front and Rear tire pressure HUD and Double slots for Outrider TL sensors (needs the Outrider extension), colored green, yellow, orange and red by how far the pressure is from a target; while a sensor reconnects its last value stays on screen in grey
 - Avg Cadence, Lap Avg Cadence, Last Lap Avg Cadence and Max Cadence, as fields and as HUD slots, with Cadence's threshold coloring
 
 ## 4.0
