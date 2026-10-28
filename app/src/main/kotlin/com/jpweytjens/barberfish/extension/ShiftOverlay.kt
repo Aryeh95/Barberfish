@@ -43,13 +43,21 @@ data class GearReading(
     val rearCount: Int? = null,
     val rearTeeth: Int? = null,
 ) {
-    /** "F50 - R10", or gear numbers when the sizes are not reported. */
-    val label: String
-        get() {
-            val f = frontTeeth ?: front
-            val r = rearTeeth ?: rear
-            return listOfNotNull(f?.let { "F$it" }, r?.let { "R$it" }).joinToString(" - ")
-        }
+    /**
+     * The gears as [text] asks, "F50 - R10" or "F2 - R12", the chainring left out unless
+     * [withFront]. Teeth fall back to gear numbers when the groupset does not report sizes. Null
+     * for [ShiftGearText.OFF] or when there is nothing to write.
+     */
+    fun label(text: ShiftGearText, withFront: Boolean = true): String? {
+        val (f, r) =
+            when (text) {
+                ShiftGearText.TEETH -> (frontTeeth ?: front) to (rearTeeth ?: rear)
+                ShiftGearText.NUMBERS -> front to rear
+                ShiftGearText.OFF -> return null
+            }
+        val parts = listOfNotNull(f?.takeIf { withFront }?.let { "F$it" }, r?.let { "R$it" })
+        return parts.joinToString(" - ").ifEmpty { null }
+    }
 
     val ratio: Double?
         get() =
@@ -111,17 +119,35 @@ internal class ShiftDetector(private val everyShift: Boolean) {
 /**
  * The shift overlay's panel, after Ki2's dark overlay and GearsView (github.com/valterc/ki2,
  * Copyright (c) 2022 Valter C., MIT licence): a title bar, the chainrings and cassette as bars with
- * the gear in use filled, and the gears in teeth with their ratio. A gear on either end of the
- * cassette is filled and titled in that end's color.
+ * the gear in use filled, and the gears with their ratio. [config] picks which parts show and their
+ * size. A gear on either end of the cassette is filled and titled in that end's color; with the
+ * header off, the gears are written in it instead.
+ *
+ * With the gear bars it takes the width it is given less a margin each side (times the size's width
+ * fraction); without them it is as wide as its text.
  */
 @SuppressLint("ViewConstructor") // only ever built in code
 internal class ShiftOverlayView(
     context: Context,
     private val reading: GearReading,
     private val end: CassetteEnd?,
+    private val config: ShiftOverlayConfig,
 ) : View(context) {
     private val metrics = resources.displayMetrics
+    private val scale = config.size.scale
     private val stroke = dp(GEAR_STROKE_DP)
+    private val pad = dp(PAD_DP)
+
+    private val showsBars = config.showBars && reading.rearCount != null && reading.rear != null
+    private val showsFront = config.showChainrings && reading.front != null
+    private val ratio =
+        reading.ratio?.takeIf { config.showRatio }?.let { String.format(Locale.US, "%.2f", it) }
+    // The overlay is never empty: with every part off, the gears are still written.
+    private val gears =
+        reading.label(config.gearText, showsFront)
+            ?: reading.label(ShiftGearText.TEETH, showsFront).takeIf {
+                !config.showHeader && !showsBars && ratio == null
+            }
 
     private val background = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = BACKGROUND }
     private val titleBar = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = TITLE_BAR }
@@ -134,82 +160,107 @@ internal class ShiftOverlayView(
             style = Paint.Style.STROKE
             strokeWidth = stroke
         }
-    private val title = text(TITLE_SP, Typeface.DEFAULT_BOLD, end?.color ?: Color.WHITE)
-    private val countText = text(COUNT_SP, Typeface.DEFAULT_BOLD, Color.WHITE)
-    private val gearText = text(GEARS_SP, Typeface.MONOSPACE, Color.WHITE)
-    private val ratioText = text(RATIO_SP, Typeface.MONOSPACE, RATIO_COLOR)
+    // The Karoo's own fonts, as Barberfish's fields use them: Relative for values, IBM Plex Sans
+    // Condensed for headers and labels.
+    private val title = text(TITLE_SP, LABEL_BOLD, end?.color ?: Color.WHITE)
+    private val countText = text(COUNT_SP, LABEL_BOLD, Color.WHITE)
+    private val gearText =
+        text(GEARS_SP, VALUE_FONT, end?.color?.takeIf { !config.showHeader } ?: Color.WHITE)
+    private val ratioText = text(RATIO_SP, VALUE_FONT, RATIO_COLOR)
 
-    private val showsBars = reading.rearCount != null && reading.rear != null
+    private val titleText: String
+        get() = end?.title ?: "GEARS"
+
+    private val hasTextRow: Boolean
+        get() = gears != null || ratio != null
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val pad = dp(PAD_DP)
-        var height = pad + dp(TITLE_BAR_DP) + pad
+        var height = pad
+        if (config.showHeader) height += dp(TITLE_BAR_DP) + pad
         if (showsBars) height += dp(GEARS_DP) + lineHeight(countText) + pad
-        height += lineHeight(gearText) + pad
-        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), height.toInt())
+        if (hasTextRow) height += lineHeight(gearText) + pad
+        // The gear bars spread across the screen, short of a margin each side, as Ki2's do.
+        val available = MeasureSpec.getSize(widthMeasureSpec).toFloat()
+        val margin = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, SIDE_MARGIN_DP, metrics)
+        val width =
+            if (showsBars) (available - margin * 2) * config.size.widthFraction else textWidth()
+        setMeasuredDimension(width.coerceAtMost(available).toInt(), height.toInt())
+    }
+
+    /** The narrowest panel that fits the title and the text row. */
+    private fun textWidth(): Float {
+        val row =
+            listOfNotNull(
+                gears?.let { gearText.measureText(it) },
+                ratio?.let { ratioText.measureText(it) },
+            )
+        val rowWidth = row.sum() + if (row.size > 1) pad * 2 else 0f
+        val titleWidth = if (config.showHeader) title.measureText(titleText) else 0f
+        return maxOf(rowWidth, titleWidth) + pad * 2
     }
 
     override fun onDraw(canvas: Canvas) {
         val w = width.toFloat()
-        val pad = dp(PAD_DP)
         val radius = dp(CORNER_DP)
         canvas.drawRoundRect(0f, 0f, w, height.toFloat(), radius, radius, background)
 
-        val barHeight = dp(TITLE_BAR_DP)
-        canvas.drawRoundRect(0f, 0f, w, barHeight, radius, radius, titleBar)
-        canvas.drawRect(0f, barHeight - radius, w, barHeight, titleBar)
-        canvas.drawText(end?.title ?: "GEARS", pad, baseline(title, 0f, barHeight), title)
+        var y = pad
+        if (config.showHeader) {
+            val barHeight = dp(TITLE_BAR_DP)
+            canvas.drawRoundRect(0f, 0f, w, barHeight, radius, radius, titleBar)
+            canvas.drawRect(0f, barHeight - radius, w, barHeight, titleBar)
+            canvas.drawText(titleText, pad, baseline(title, 0f, barHeight), title)
+            y = barHeight + pad
+        }
 
-        var y = barHeight + pad
         if (showsBars) {
             drawGears(canvas, pad, y, w - pad * 2, dp(GEARS_DP))
             y += dp(GEARS_DP) + lineHeight(countText) + pad
         }
 
-        val line = lineHeight(gearText)
-        canvas.drawText(reading.label, pad, baseline(gearText, y, y + line), gearText)
-        reading.ratio?.let {
-            val ratio = String.format(Locale.US, "%.2f", it)
-            canvas.drawText(
-                ratio,
-                w - pad - ratioText.measureText(ratio),
-                baseline(gearText, y, y + line),
-                ratioText,
-            )
+        if (hasTextRow) {
+            val line = lineHeight(gearText)
+            val base = baseline(gearText, y, y + line)
+            gears?.let { canvas.drawText(it, pad, base, gearText) }
+            ratio?.let { canvas.drawText(it, w - pad - ratioText.measureText(it), base, ratioText) }
         }
     }
 
     /** Ki2's GearsView geometry: chainrings rise left to right, the cassette falls. */
     private fun drawGears(canvas: Canvas, left: Float, top: Float, width: Float, height: Float) {
-        val frontCount = reading.frontCount?.takeIf { reading.front != null } ?: 0
+        val frontCount = reading.frontCount?.takeIf { showsFront } ?: 0
         val rearCount = reading.rearCount ?: return
         val space = width * GEAR_SPACE
-        val setSpace = width * SET_SPACE
+        val setSpace = if (frontCount > 0) width * SET_SPACE else 0f
         val total = frontCount + rearCount
-        val gearWidth = (width - space * (total + frontCount) - setSpace) / total
+        // Bars wider than [MAX_GEAR_DP], as a lone cassette would get, stay that wide and the set
+        // is centered.
+        val gearWidth =
+            minOf((width - space * (total + frontCount) - setSpace) / total, dp(MAX_GEAR_DP))
+        val setWidth = gearWidth * total + space * (total + frontCount) + setSpace
+        val start = left + (width - setWidth) / 2
         val usable = height - stroke * 2
         val barTop = top + stroke
         val bottom = barTop + usable
 
-        var x = left + space
+        var x = start + space
         if (frontCount > 0) {
             val bump = if (frontCount == 1) 0f else (1 - FRONT_MIN) * usable / (frontCount - 1)
             for (i in 1..frontCount) {
-                val start = barTop + bump * (frontCount - i)
                 bar(
                     canvas,
                     x,
-                    start,
+                    barTop + bump * (frontCount - i),
                     gearWidth,
                     bottom,
                     if (i == reading.front) selected else unselected,
                 )
                 x += gearWidth + space
             }
-            drawCount(canvas, left + space, x - space, bottom, reading.front, frontCount)
+            drawCount(canvas, start + space, x - space, bottom, reading.front, frontCount)
         }
 
-        val rearLeft = left + (gearWidth + space * 2) * frontCount + setSpace
+        val rearLeft = start + (gearWidth + space * 2) * frontCount + setSpace
         x = rearLeft
         val bump = if (rearCount == 1) 0f else usable * REAR_DROP / (rearCount - 1)
         for (i in 1..rearCount) {
@@ -261,7 +312,7 @@ internal class ShiftOverlayView(
 
     private fun text(sp: Float, face: Typeface, textColor: Int) =
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, metrics)
+            textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp * scale, metrics)
             typeface = face
             color = textColor
         }
@@ -274,9 +325,12 @@ internal class ShiftOverlayView(
     }
 
     private fun dp(value: Float): Float =
-        TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, metrics)
+        TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value * scale, metrics)
 
     private companion object {
+        val VALUE_FONT: Typeface = Typeface.create("relative", Typeface.NORMAL)
+        val LABEL_BOLD: Typeface = Typeface.create("ibm-plex-sans-condensed", Typeface.BOLD)
+
         // Ki2's dark theme.
         const val BACKGROUND = 0xFF102020.toInt()
         const val TITLE_BAR = 0x4F000000
@@ -288,6 +342,8 @@ internal class ShiftOverlayView(
         const val FRONT_MIN = 0.7f
         const val REAR_DROP = 0.6f
         const val GEAR_STROKE_DP = 1.5f
+        const val MAX_GEAR_DP = 14f
+        const val SIDE_MARGIN_DP = 4f
         const val PAD_DP = 6f
         const val CORNER_DP = 5f
         const val TITLE_BAR_DP = 30f
@@ -320,12 +376,20 @@ class ShiftOverlay(context: Context) {
                 Timber.w("Shift overlay: no permission to draw over other apps")
                 return@post
             }
-            val panel = ShiftOverlayView(context, reading, end)
-            val margin = dp(SIDE_MARGIN_DP)
+            val panel = ShiftOverlayView(context, reading, end, config)
+            // Measured here against the screen width and the window sized to match, so the
+            // system's narrower first try for wrap-content windows never squeezes the bars.
+            panel.measure(
+                View.MeasureSpec.makeMeasureSpec(
+                    context.resources.displayMetrics.widthPixels,
+                    View.MeasureSpec.AT_MOST,
+                ),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+            )
             val params =
                 WindowManager.LayoutParams(
-                    context.resources.displayMetrics.widthPixels - margin * 2,
-                    WindowManager.LayoutParams.WRAP_CONTENT,
+                    panel.measuredWidth,
+                    panel.measuredHeight,
                     WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                     WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                         WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
@@ -354,7 +418,6 @@ class ShiftOverlay(context: Context) {
     private companion object {
         const val MS_PER_S = 1_000L
         const val EDGE_MARGIN_DP = 28
-        const val SIDE_MARGIN_DP = 4
     }
 }
 

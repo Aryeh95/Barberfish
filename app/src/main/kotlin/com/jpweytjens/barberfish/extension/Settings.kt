@@ -1089,8 +1089,26 @@ enum class ShiftTrigger(val label: String) {
 }
 
 /**
+ * The shift overlay's size. [scale] multiplies its text, bars and spacing; with the gear bars on,
+ * [widthFraction] is how much of the screen width the panel takes.
+ */
+enum class ShiftOverlaySize(val label: String, val scale: Float, val widthFraction: Float) {
+    SMALL("Small", 0.75f, 0.75f),
+    MEDIUM("Medium", 1f, 1f),
+    LARGE("Large", 1.3f, 1f),
+}
+
+/** How the overlay writes the gears: in teeth (F50 - R10), as gear numbers (F2 - R12), or not. */
+enum class ShiftGearText(val label: String) {
+    TEETH("Teeth"),
+    NUMBERS("Numbers"),
+    OFF("Off"),
+}
+
+/**
  * The shift overlay: a few seconds over the ride screen when a shift lands on either end of the
- * cassette, or on every shift.
+ * cassette, or on every shift. The layout options pick which of its parts show; with every part off
+ * the gears are still written, so the overlay is never empty.
  */
 @Serializable
 data class ShiftOverlayConfig(
@@ -1098,6 +1116,12 @@ data class ShiftOverlayConfig(
     val trigger: ShiftTrigger = ShiftTrigger.END_COGS,
     val seconds: Int = 2,
     val position: ShiftOverlayPosition = ShiftOverlayPosition.TOP,
+    val size: ShiftOverlaySize = ShiftOverlaySize.MEDIUM,
+    val showHeader: Boolean = true,
+    val showBars: Boolean = true,
+    val gearText: ShiftGearText = ShiftGearText.TEETH,
+    val showRatio: Boolean = true,
+    val showChainrings: Boolean = true,
 )
 
 private val shiftOverlayConfigKey = stringPreferencesKey("shift_overlay_config")

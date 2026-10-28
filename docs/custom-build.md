@@ -31,7 +31,10 @@ under its own package, `io.github.aryeh95.barberfish`.
   `SHIFTING_REAR_GEAR`: the gear, its teeth and the gear count), so it works with any electronic
   groupset paired with the Karoo, such as SRAM AXS, with nothing to configure. It draws in a
   window over other apps, which needs the "display over other apps" permission; the section
-  links to the system screen that grants it.
+  links to the system screen that grants it. Its layout is set there too, with a live preview:
+  size, header, gear bars, ratio and chainrings on or off, and the gears in teeth or as gear
+  numbers. Without the bars it shrinks to its text; without the header the gears take the end's
+  color.
 - Header labels in narrow HUD and Double slots shrink to keep a long word whole, and a value
   drawn without its header never outgrows its cell.
 

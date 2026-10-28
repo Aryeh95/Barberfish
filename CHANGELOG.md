@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.0.3
+
+- Shift overlay layout: Small, Medium or Large; the header, gear bars, ratio and chainrings each on or off; the gears in teeth (F50 - R10), as gear numbers (F2 - R12) or not written. With the gear bars off the overlay shrinks to its text, and with the header off the gears take the end's color. A preview in the Shifting section follows every change
+- The shift overlay uses the Karoo's own fonts, like the rest of Barberfish
+
 ## 4.0.2
 
 - Shift overlay: when you shift onto the smallest or largest cog, the gears show over the ride screen for 2, 3 or 5 seconds, in the style of Ki2's overlay: the chainrings and cassette as bars, the gears in teeth and the ratio, with the end cog in red (smallest) or blue (largest). Works with any electronic groupset the Karoo reads, such as SRAM AXS, with nothing to set up. Can also show on every shift. Turn it on under Shifting; it needs permission to display over other apps

@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish
 import com.jpweytjens.barberfish.extension.CassetteEnd
 import com.jpweytjens.barberfish.extension.GearReading
 import com.jpweytjens.barberfish.extension.ShiftDetector
+import com.jpweytjens.barberfish.extension.ShiftGearText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -85,10 +86,18 @@ class ShiftDetectorTest {
     }
 
     @Test
-    fun `the label and ratio come from the teeth`() {
+    fun `the gears are written in teeth or as gear numbers`() {
         val reading = axs(12)
-        assertEquals("F50 - R10", reading.label)
+        assertEquals("F50 - R10", reading.label(ShiftGearText.TEETH))
+        assertEquals("F2 - R12", reading.label(ShiftGearText.NUMBERS))
+        assertEquals("R10", reading.label(ShiftGearText.TEETH, withFront = false))
+        assertNull(reading.label(ShiftGearText.OFF))
         assertEquals(5.0, reading.ratio!!, 1e-9)
-        assertEquals("F2 - R12", GearReading(front = 2, rear = 12).label)
+    }
+
+    @Test
+    fun `teeth fall back to gear numbers when the groupset does not report sizes`() {
+        assertEquals("F2 - R12", GearReading(front = 2, rear = 12).label(ShiftGearText.TEETH))
+        assertNull(GearReading().label(ShiftGearText.TEETH))
     }
 }
