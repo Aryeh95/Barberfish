@@ -1,0 +1,10 @@
+<!-- A cassette, its cogs stepping down from the largest: the Shifting section's icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#000000"
+        android:pathData="M3.70,3.00h0a1.20,1.20 0,0 1,1.20,1.20V19.80a1.20,1.20 0,0 1,-2.40,0V4.20a1.20,1.20 0,0 1,1.20,-1.20ZM7.10,4.20h0a1.20,1.20 0,0 1,1.20,1.20V18.60a1.20,1.20 0,0 1,-2.40,0V5.40a1.20,1.20 0,0 1,1.20,-1.20ZM10.50,5.40h0a1.20,1.20 0,0 1,1.20,1.20V17.40a1.20,1.20 0,0 1,-2.40,0V6.60a1.20,1.20 0,0 1,1.20,-1.20ZM13.90,6.60h0a1.20,1.20 0,0 1,1.20,1.20V16.20a1.20,1.20 0,0 1,-2.40,0V7.80a1.20,1.20 0,0 1,1.20,-1.20ZM17.30,7.80h0a1.20,1.20 0,0 1,1.20,1.20V15.00a1.20,1.20 0,0 1,-2.40,0V9.00a1.20,1.20 0,0 1,1.20,-1.20ZM20.70,9.00h0a1.20,1.20 0,0 1,1.20,1.20V13.80a1.20,1.20 0,0 1,-2.40,0V10.20a1.20,1.20 0,0 1,1.20,-1.20Z"/>
+</vector>

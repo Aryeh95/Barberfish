@@ -1,6 +1,7 @@
 package com.jpweytjens.barberfish.extension
 
 import android.content.Context
+import android.view.Gravity
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -1073,3 +1074,36 @@ fun Context.streamConfigSnapshot(): Flow<ConfigSnapshot> =
             )
         }
         .distinctUntilChanged()
+
+/** Where the shift overlay sits on the ride screen. */
+enum class ShiftOverlayPosition(val label: String, val gravity: Int) {
+    TOP("Top", Gravity.TOP or Gravity.CENTER_HORIZONTAL),
+    MIDDLE("Middle", Gravity.CENTER),
+    BOTTOM("Bottom", Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL),
+}
+
+/** When the shift overlay shows. */
+enum class ShiftTrigger(val label: String) {
+    END_COGS("End cogs"),
+    EVERY_SHIFT("Every shift"),
+}
+
+/**
+ * The shift overlay: a few seconds over the ride screen when a shift lands on either end of the
+ * cassette, or on every shift.
+ */
+@Serializable
+data class ShiftOverlayConfig(
+    val enabled: Boolean = false,
+    val trigger: ShiftTrigger = ShiftTrigger.END_COGS,
+    val seconds: Int = 2,
+    val position: ShiftOverlayPosition = ShiftOverlayPosition.TOP,
+)
+
+private val shiftOverlayConfigKey = stringPreferencesKey("shift_overlay_config")
+
+fun Context.streamShiftOverlayConfig(): Flow<ShiftOverlayConfig> =
+    streamConfig(shiftOverlayConfigKey, ShiftOverlayConfig())
+
+suspend fun Context.saveShiftOverlayConfig(config: ShiftOverlayConfig) =
+    saveConfig(shiftOverlayConfigKey, config)

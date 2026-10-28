@@ -24,6 +24,14 @@ under its own package, `io.github.aryeh95.barberfish`.
   extension must be installed with the sensors paired; set the slot's Unit to match it. A
   target colors the value green within one step, then yellow, orange and red each step
   further, above or below.
+- **Shift overlay**, under Shifting: when a shift lands on the smallest or largest cog (or on
+  every shift, if chosen), a panel after [Ki2](https://github.com/valterc/ki2)'s overlay shows
+  the chainrings and cassette as bars, the gears in teeth and the ratio, over the ride screen for
+  2 to 5 seconds. It reads the Karoo's own gear streams (`SHIFTING_FRONT_GEAR`,
+  `SHIFTING_REAR_GEAR`: the gear, its teeth and the gear count), so it works with any electronic
+  groupset paired with the Karoo, such as SRAM AXS, with nothing to configure. It draws in a
+  window over other apps, which needs the "display over other apps" permission; the section
+  links to the system screen that grants it.
 - Header labels in narrow HUD and Double slots shrink to keep a long word whole, and a value
   drawn without its header never outgrows its cell.
 

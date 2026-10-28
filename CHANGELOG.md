@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.0.2
+
+- Shift overlay: when you shift onto the smallest or largest cog, the gears show over the ride screen for 2, 3 or 5 seconds, in the style of Ki2's overlay: the chainrings and cassette as bars, the gears in teeth and the ratio, with the end cog in red (smallest) or blue (largest). Works with any electronic groupset the Karoo reads, such as SRAM AXS, with nothing to set up. Can also show on every shift. Turn it on under Shifting; it needs permission to display over other apps
+
 ## 4.0.1
 
 Barberfish+, a personal fork of Barberfish 4.0:

@@ -79,6 +79,7 @@ import io.hammerhead.karooext.models.Symbol
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -182,13 +183,18 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
 
     override val types by lazy { barberfishDataTypes(karooSystem) }
 
+    // Work that lives as long as the service: the shift overlay.
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
     override fun onCreate() {
         super.onCreate()
         karooSystem = KarooSystemService(applicationContext)
         karooSystem.connect { Timber.d("Karoo system connected") }
+        serviceScope.launch { runShiftOverlay(applicationContext, karooSystem) }
     }
 
     override fun onDestroy() {
+        serviceScope.cancel()
         karooSystem.disconnect()
         super.onDestroy()
     }

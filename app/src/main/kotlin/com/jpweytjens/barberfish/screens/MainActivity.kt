@@ -173,6 +173,7 @@ import com.jpweytjens.barberfish.extension.PowerSmoothingStream
 import com.jpweytjens.barberfish.extension.PowerZoneFieldConfig
 import com.jpweytjens.barberfish.extension.RouteRemainingConfig
 import com.jpweytjens.barberfish.extension.RouteSimplification
+import com.jpweytjens.barberfish.extension.ShiftOverlayConfig
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.SparklineMode
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
@@ -210,12 +211,14 @@ import com.jpweytjens.barberfish.extension.saveNPFieldConfig
 import com.jpweytjens.barberfish.extension.savePowerFieldConfig
 import com.jpweytjens.barberfish.extension.savePowerZoneFieldConfig
 import com.jpweytjens.barberfish.extension.saveRouteRemainingConfig
+import com.jpweytjens.barberfish.extension.saveShiftOverlayConfig
 import com.jpweytjens.barberfish.extension.saveSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.saveTimeConfig
 import com.jpweytjens.barberfish.extension.saveWindFieldConfig
 import com.jpweytjens.barberfish.extension.saveWindSockConfig
 import com.jpweytjens.barberfish.extension.saveZoneConfig
 import com.jpweytjens.barberfish.extension.streamConfigSnapshot
+import com.jpweytjens.barberfish.extension.streamShiftOverlayConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.UserProfile
@@ -250,6 +253,9 @@ class MainActivity : ComponentActivity() {
     // Re-checked on every resume: the rider may install Headwind and come straight back.
     private var headwindInstalled by mutableStateOf(false)
 
+    // Re-checked on every resume: the rider grants it on the system screen and comes back.
+    private var overlayAllowed by mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         karooSystem = KarooSystemService(applicationContext)
@@ -275,6 +281,7 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         headwindInstalled = isHeadwindInstalled()
+        overlayAllowed = android.provider.Settings.canDrawOverlays(this)
     }
 
     // The two-argument overload is the one that runs on the Karoo's Android versions;
@@ -301,6 +308,7 @@ class MainActivity : ComponentActivity() {
         var hudSparklineConfig by remember { mutableStateOf(SparklineConfig()) }
         var fieldSparklineConfig by remember { mutableStateOf(SparklineConfig()) }
         var gradeMapConfig by remember { mutableStateOf(GradeMapConfig()) }
+        var shiftOverlayConfig by remember { mutableStateOf(ShiftOverlayConfig()) }
         var powerFieldConfig by remember { mutableStateOf(PowerFieldConfig()) }
         var hrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
         var avgHrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
@@ -359,6 +367,7 @@ class MainActivity : ComponentActivity() {
         var palettesExpanded by remember { mutableStateOf(false) }
         var timeExpanded by remember { mutableStateOf(false) }
         var designExpanded by remember { mutableStateOf(false) }
+        var shiftingExpanded by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) {
             launch {
@@ -399,6 +408,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             launch { karooSystem.streamUserProfile().collect { userProfile = it } }
+            launch { streamShiftOverlayConfig().collect { shiftOverlayConfig = it } }
         }
 
         val screenshotMode = remember { intent?.getBooleanExtra("screenshot", false) == true }
@@ -1361,6 +1371,17 @@ class MainActivity : ComponentActivity() {
                     } // end Climbing
 
                     CollapsibleSection(
+                        section = ConfigSection.SHIFTING,
+                        expanded = shiftingExpanded,
+                        onToggle = { shiftingExpanded = !shiftingExpanded },
+                    ) {
+                        ShiftOverlaySectionContent(shiftOverlayConfig, overlayAllowed) { updated ->
+                            shiftOverlayConfig = updated
+                            lifecycleScope.launch { saveShiftOverlayConfig(updated) }
+                        }
+                    } // end Shifting
+
+                    CollapsibleSection(
                         section = ConfigSection.ETA,
                         expanded = etaExpanded,
                         onToggle = { etaExpanded = !etaExpanded },
@@ -1736,6 +1757,12 @@ internal enum class ConfigSection(
         "climbing",
         "The elevation profile and the grade map overlay",
         R.drawable.ic_grade,
+    ),
+    SHIFTING(
+        "Shifting",
+        "shifting",
+        "Show the gears over the ride screen when you reach the end of the cassette",
+        R.drawable.ic_section_shifting,
     ),
     ETA("ETA", "eta", "Time of arrival estimation", R.drawable.ic_finish_flag),
     TIME("Time", "time", "Format for time and duration fields", R.drawable.ic_stopwatch),

@@ -14,6 +14,9 @@ A personal fork of [Barberfish](https://github.com/jpweytjens/Barberfish) with i
 - Distance, Ascent and Descent read 0 before the ride and hold their total while paused.
 - Front and Rear tire pressure slots for Outrider TL sensors, read from the Outrider extension,
   colored by how far the pressure is from a target.
+- A shift overlay after [Ki2](https://github.com/valterc/ki2)'s: when you shift onto the smallest
+  or largest cog, the gears show over the ride screen for a moment, from any electronic groupset
+  paired with the Karoo, such as SRAM AXS.
 - The Wind field, HUD slot and map windsock from the developer's unreleased wind work, with
   **Show speed** and a Headwind-style layout on the Wind slot (needs the Headwind extension).
 
@@ -96,6 +99,7 @@ Betafish is the beta of the official Barberfish, not of Barberfish+: it does not
 ## Credits
 
 - [karoo-ext](https://github.com/hammerheadnav/karoo-ext): the official Hammerhead SDK for building Karoo extensions
+- [Ki2](https://github.com/valterc/ki2) (MIT licence, copyright 2022 Valter C.): the look of Barberfish+'s shift overlay and the way it draws over the ride screen
 - [awesome-karoo](https://github.com/timklge/awesome-karoo): a curated list of Karoo extensions and resources
 - [Hammerhead Visual Data Field System](https://www.figma.com/design/Adr23SlulPNE2RBu1VI28C/%3CH%3E-Visual-Data-Field-System?node-id=1-64&p=f): the Figma design guide used to match the native Karoo look and feel
 - [Edward Tufte](https://www.edwardtufte.com/): the sparkline behind the elevation profile
