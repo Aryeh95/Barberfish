@@ -3,6 +3,7 @@
 ## 4.0.3
 
 - Shift overlay layout: Small, Medium or Large; the header, gear bars, ratio and chainrings each on or off; the gears in teeth (F50 - R10), as gear numbers (F2 - R12) or not written. With the gear bars off the overlay shrinks to its text, and with the header off the gears take the end's color. A preview in the Shifting section follows every change
+- Shift overlay placement: anywhere from the top to the bottom of the screen in 5% steps, and to the left, center or right when it is narrower than the screen, with a sketch of the screen showing where it will land. A 4.0.2 Top, Middle or Bottom carries over
 - The shift overlay uses the Karoo's own fonts, like the rest of Barberfish
 
 ## 4.0.2

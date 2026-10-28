@@ -11,6 +11,7 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.util.TypedValue
+import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import io.hammerhead.karooext.KarooSystemService
@@ -396,8 +397,19 @@ class ShiftOverlay(context: Context) {
                         WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                     PixelFormat.TRANSLUCENT,
                 )
-            params.gravity = config.position.gravity
-            params.y = if (config.position == ShiftOverlayPosition.MIDDLE) 0 else dp(EDGE_MARGIN_DP)
+            val metrics = context.resources.displayMetrics
+            val (x, y) =
+                overlayOrigin(
+                    metrics.widthPixels,
+                    metrics.heightPixels,
+                    panel.measuredWidth,
+                    panel.measuredHeight,
+                    dp(SHIFT_OVERLAY_EDGE_MARGIN_DP),
+                    config,
+                )
+            params.gravity = Gravity.TOP or Gravity.START
+            params.x = x
+            params.y = y
             runCatching { windowManager.addView(panel, params) }
                 .onSuccess {
                     view = panel
@@ -417,8 +429,33 @@ class ShiftOverlay(context: Context) {
 
     private companion object {
         const val MS_PER_S = 1_000L
-        const val EDGE_MARGIN_DP = 28
     }
+}
+
+/** How far, in dp, the shift overlay keeps from the side it is aligned to. */
+internal const val SHIFT_OVERLAY_EDGE_MARGIN_DP = 4
+
+/**
+ * The top-left corner, in pixels, of a [panelWidth] by [panelHeight] overlay on a screen of
+ * [screenWidth] by [screenHeight]: [ShiftOverlayConfig.height] percent of the way down the free
+ * space, and to the side [ShiftOverlayConfig.align] picks, [margin] in from that edge.
+ */
+internal fun overlayOrigin(
+    screenWidth: Int,
+    screenHeight: Int,
+    panelWidth: Int,
+    panelHeight: Int,
+    margin: Int,
+    config: ShiftOverlayConfig,
+): Pair<Int, Int> {
+    val x =
+        when (config.align) {
+            ShiftOverlayAlign.LEFT -> margin
+            ShiftOverlayAlign.CENTER -> (screenWidth - panelWidth) / 2
+            ShiftOverlayAlign.RIGHT -> screenWidth - panelWidth - margin
+        }
+    val y = (screenHeight - panelHeight).coerceAtLeast(0) * config.height.coerceIn(0, 100) / 100
+    return x.coerceIn(0, (screenWidth - panelWidth).coerceAtLeast(0)) to y
 }
 
 private fun KarooSystemService.gearValues(typeId: String): Flow<Map<String, Double>?> =

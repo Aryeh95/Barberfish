@@ -4,6 +4,10 @@ import com.jpweytjens.barberfish.extension.CassetteEnd
 import com.jpweytjens.barberfish.extension.GearReading
 import com.jpweytjens.barberfish.extension.ShiftDetector
 import com.jpweytjens.barberfish.extension.ShiftGearText
+import com.jpweytjens.barberfish.extension.ShiftOverlayAlign
+import com.jpweytjens.barberfish.extension.ShiftOverlayConfig
+import com.jpweytjens.barberfish.extension.ShiftOverlayPosition
+import com.jpweytjens.barberfish.extension.overlayOrigin
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -99,5 +103,41 @@ class ShiftDetectorTest {
     fun `teeth fall back to gear numbers when the groupset does not report sizes`() {
         assertEquals("F2 - R12", GearReading(front = 2, rear = 12).label(ShiftGearText.TEETH))
         assertNull(GearReading().label(ShiftGearText.TEETH))
+    }
+}
+
+class ShiftOverlayPlacementTest {
+
+    private fun origin(config: ShiftOverlayConfig) =
+        overlayOrigin(
+            screenWidth = 480,
+            screenHeight = 800,
+            panelWidth = 200,
+            panelHeight = 100,
+            margin = 6,
+            config = config,
+        )
+
+    @Test
+    fun `the height runs from the top edge to the bottom edge`() {
+        assertEquals(140 to 0, origin(ShiftOverlayConfig(heightPercent = 0)))
+        assertEquals(140 to 350, origin(ShiftOverlayConfig(heightPercent = 50)))
+        assertEquals(140 to 700, origin(ShiftOverlayConfig(heightPercent = 100)))
+    }
+
+    @Test
+    fun `a narrow overlay keeps to the side it is aligned to`() {
+        val top = ShiftOverlayConfig(heightPercent = 0)
+        assertEquals(6 to 0, origin(top.copy(align = ShiftOverlayAlign.LEFT)))
+        assertEquals(274 to 0, origin(top.copy(align = ShiftOverlayAlign.RIGHT)))
+    }
+
+    @Test
+    fun `settings from 4_0_2 keep their place`() {
+        assertEquals(5, ShiftOverlayConfig(position = ShiftOverlayPosition.TOP).height)
+        assertEquals(50, ShiftOverlayConfig(position = ShiftOverlayPosition.MIDDLE).height)
+        assertEquals(95, ShiftOverlayConfig(position = ShiftOverlayPosition.BOTTOM).height)
+        val moved = ShiftOverlayConfig(position = ShiftOverlayPosition.BOTTOM, heightPercent = 20)
+        assertEquals(20, moved.height)
     }
 }

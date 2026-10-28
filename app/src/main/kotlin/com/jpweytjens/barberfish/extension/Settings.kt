@@ -1,7 +1,6 @@
 package com.jpweytjens.barberfish.extension
 
 import android.content.Context
-import android.view.Gravity
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -1075,11 +1074,21 @@ fun Context.streamConfigSnapshot(): Flow<ConfigSnapshot> =
         }
         .distinctUntilChanged()
 
-/** Where the shift overlay sits on the ride screen. */
-enum class ShiftOverlayPosition(val label: String, val gravity: Int) {
-    TOP("Top", Gravity.TOP or Gravity.CENTER_HORIZONTAL),
-    MIDDLE("Middle", Gravity.CENTER),
-    BOTTOM("Bottom", Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL),
+/**
+ * Where 4.0.2 put the shift overlay, kept to read those settings: each maps to the height
+ * [ShiftOverlayConfig.heightPercent] that matches it.
+ */
+enum class ShiftOverlayPosition(val heightPercent: Int) {
+    TOP(5),
+    MIDDLE(50),
+    BOTTOM(95),
+}
+
+/** Which side of the screen a shift overlay narrower than the screen keeps to. */
+enum class ShiftOverlayAlign(val label: String) {
+    LEFT("Left"),
+    CENTER("Center"),
+    RIGHT("Right"),
 }
 
 /** When the shift overlay shows. */
@@ -1116,13 +1125,20 @@ data class ShiftOverlayConfig(
     val trigger: ShiftTrigger = ShiftTrigger.END_COGS,
     val seconds: Int = 2,
     val position: ShiftOverlayPosition = ShiftOverlayPosition.TOP,
+    // How far down the screen the overlay sits, 0 at the top and 100 at the bottom. Null until set,
+    // when the 4.0.2 [position] decides.
+    val heightPercent: Int? = null,
+    val align: ShiftOverlayAlign = ShiftOverlayAlign.CENTER,
     val size: ShiftOverlaySize = ShiftOverlaySize.MEDIUM,
     val showHeader: Boolean = true,
     val showBars: Boolean = true,
     val gearText: ShiftGearText = ShiftGearText.TEETH,
     val showRatio: Boolean = true,
     val showChainrings: Boolean = true,
-)
+) {
+    val height: Int
+        get() = heightPercent ?: position.heightPercent
+}
 
 private val shiftOverlayConfigKey = stringPreferencesKey("shift_overlay_config")
 

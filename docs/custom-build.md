@@ -34,7 +34,8 @@ under its own package, `io.github.aryeh95.barberfish`.
   links to the system screen that grants it. Its layout is set there too, with a live preview:
   size, header, gear bars, ratio and chainrings on or off, and the gears in teeth or as gear
   numbers. Without the bars it shrinks to its text; without the header the gears take the end's
-  color.
+  color. It can sit anywhere from the top to the bottom of the screen and keep left, center or
+  right, shown on a sketch of the screen.
 - Header labels in narrow HUD and Double slots shrink to keep a long word whole, and a value
   drawn without its header never outgrows its cell.
 
