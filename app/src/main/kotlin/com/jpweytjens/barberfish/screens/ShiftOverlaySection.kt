@@ -27,7 +27,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -214,7 +214,9 @@ private fun ShiftOverlayPlacementControls(
 @Composable
 private fun ScreenPlacementSketch(config: ShiftOverlayConfig) {
     val context = LocalContext.current
-    val metrics = LocalResources.current.displayMetrics
+    // The screen in pixels, as the overlay window measures it.
+    val metrics = LocalView.current.resources.displayMetrics
+    val density = metrics.density
     val screenW = metrics.widthPixels
     val screenH = metrics.heightPixels
     val panel =
@@ -227,7 +229,7 @@ private fun ScreenPlacementSketch(config: ShiftOverlayConfig) {
                 measuredWidth to measuredHeight
             }
         }
-    val margin = (SHIFT_OVERLAY_EDGE_MARGIN_DP * metrics.density).toInt()
+    val margin = (SHIFT_OVERLAY_EDGE_MARGIN_DP * density).toInt()
     val (x, y) = overlayOrigin(screenW, screenH, panel.first, panel.second, margin, config)
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Canvas(
