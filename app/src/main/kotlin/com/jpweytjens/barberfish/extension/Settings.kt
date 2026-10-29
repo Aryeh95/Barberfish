@@ -1138,6 +1138,10 @@ data class ShiftOverlayConfig(
 ) {
     val height: Int
         get() = heightPercent ?: position.heightPercent
+
+    /** How the gears are written without the gear bars, when writing them is all that is left. */
+    val textGears: ShiftGearText
+        get() = if (gearText == ShiftGearText.OFF) ShiftGearText.TEETH else gearText
 }
 
 private val shiftOverlayConfigKey = stringPreferencesKey("shift_overlay_config")

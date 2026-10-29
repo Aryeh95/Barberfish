@@ -6,12 +6,12 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PixelFormat
+import android.graphics.Rect
 import android.graphics.Typeface
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.util.TypedValue
-import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import io.hammerhead.karooext.KarooSystemService
@@ -124,8 +124,11 @@ internal class ShiftDetector(private val everyShift: Boolean) {
  * size. A gear on either end of the cassette is filled and titled in that end's color; with the
  * header off, the gears are written in it instead.
  *
- * With the gear bars it takes the width it is given less a margin each side (times the size's width
- * fraction); without them it is as wide as its text.
+ * With the gear bars the panel takes the width it is given less a margin each side (times the
+ * size's width fraction); without them it is as wide as its text. With [fillsWindow] the view fills
+ * its window, a transparent one over the whole screen, and draws the panel where [overlayOrigin]
+ * puts it, so the placement follows the screen the panel is really drawn on, whatever size the app
+ * is told the display is.
  */
 @SuppressLint("ViewConstructor") // only ever built in code
 internal class ShiftOverlayView(
@@ -133,6 +136,7 @@ internal class ShiftOverlayView(
     private val reading: GearReading,
     private val end: CassetteEnd?,
     private val config: ShiftOverlayConfig,
+    private val fillsWindow: Boolean = false,
 ) : View(context) {
     private val metrics = resources.displayMetrics
     private val scale = config.size.scale
@@ -145,10 +149,14 @@ internal class ShiftOverlayView(
         reading.ratio?.takeIf { config.showRatio }?.let { String.format(Locale.US, "%.2f", it) }
     // The overlay is never empty: with every part off, the gears are still written.
     private val gears =
-        reading.label(config.gearText, showsFront)
+        reading.label(if (showsBars) config.gearText else config.textGears, showsFront)
             ?: reading.label(ShiftGearText.TEETH, showsFront).takeIf {
                 !config.showHeader && !showsBars && ratio == null
             }
+
+    // The panel's size, worked out on measure; the view's own when it does not fill its window.
+    private var panelWidth = 0
+    private var panelHeight = 0
 
     private val background = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = BACKGROUND }
     private val titleBar = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = TITLE_BAR }
@@ -178,14 +186,23 @@ internal class ShiftOverlayView(
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         var height = pad
         if (config.showHeader) height += dp(TITLE_BAR_DP) + pad
-        if (showsBars) height += dp(GEARS_DP) + lineHeight(countText) + pad
-        if (hasTextRow) height += lineHeight(gearText) + pad
+        if (showsBars) height += dp(GEARS_DP) + lineHeightOf(countText) + pad
+        if (hasTextRow) height += lineHeightOf(gearText) + pad
         // The gear bars spread across the screen, short of a margin each side, as Ki2's do.
         val available = MeasureSpec.getSize(widthMeasureSpec).toFloat()
         val margin = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, SIDE_MARGIN_DP, metrics)
         val width =
             if (showsBars) (available - margin * 2) * config.size.widthFraction else textWidth()
-        setMeasuredDimension(width.coerceAtMost(available).toInt(), height.toInt())
+        panelWidth = width.coerceAtMost(available).toInt()
+        panelHeight = height.toInt()
+        if (fillsWindow) {
+            setMeasuredDimension(
+                MeasureSpec.getSize(widthMeasureSpec),
+                MeasureSpec.getSize(heightMeasureSpec),
+            )
+        } else {
+            setMeasuredDimension(panelWidth, panelHeight)
+        }
     }
 
     /** The narrowest panel that fits the title and the text row. */
@@ -200,10 +217,36 @@ internal class ShiftOverlayView(
         return maxOf(rowWidth, titleWidth) + pad * 2
     }
 
+    /**
+     * Where the panel sits in the view once measured: at the origin, or with [fillsWindow] where
+     * [overlayOrigin] places it in the window.
+     */
+    val panelBounds: Rect
+        get() {
+            if (!fillsWindow) return Rect(0, 0, panelWidth, panelHeight)
+            val margin = dp(SIDE_MARGIN_DP).toInt()
+            val (x, y) =
+                overlayOrigin(
+                    measuredWidth,
+                    measuredHeight,
+                    panelWidth,
+                    panelHeight,
+                    margin,
+                    config,
+                )
+            return Rect(x, y, x + panelWidth, y + panelHeight)
+        }
+
     override fun onDraw(canvas: Canvas) {
-        val w = width.toFloat()
+        val bounds = panelBounds
+        canvas.translate(bounds.left.toFloat(), bounds.top.toFloat())
+        drawPanel(canvas)
+    }
+
+    private fun drawPanel(canvas: Canvas) {
+        val w = panelWidth.toFloat()
         val radius = dp(CORNER_DP)
-        canvas.drawRoundRect(0f, 0f, w, height.toFloat(), radius, radius, background)
+        canvas.drawRoundRect(0f, 0f, w, panelHeight.toFloat(), radius, radius, background)
 
         var y = pad
         if (config.showHeader) {
@@ -216,11 +259,11 @@ internal class ShiftOverlayView(
 
         if (showsBars) {
             drawGears(canvas, pad, y, w - pad * 2, dp(GEARS_DP))
-            y += dp(GEARS_DP) + lineHeight(countText) + pad
+            y += dp(GEARS_DP) + lineHeightOf(countText) + pad
         }
 
         if (hasTextRow) {
-            val line = lineHeight(gearText)
+            val line = lineHeightOf(gearText)
             val base = baseline(gearText, y, y + line)
             gears?.let { canvas.drawText(it, pad, base, gearText) }
             ratio?.let { canvas.drawText(it, w - pad - ratioText.measureText(it), base, ratioText) }
@@ -307,7 +350,7 @@ internal class ShiftOverlayView(
     ) {
         val label = "${gear ?: "-"}/$count"
         val x = (from + to) / 2 - countText.measureText(label) / 2
-        val line = lineHeight(countText)
+        val line = lineHeightOf(countText)
         canvas.drawText(label, x, baseline(countText, top + stroke, top + stroke + line), countText)
     }
 
@@ -317,13 +360,6 @@ internal class ShiftOverlayView(
             typeface = face
             color = textColor
         }
-
-    private fun lineHeight(paint: Paint): Float = paint.fontMetrics.let { it.descent - it.ascent }
-
-    private fun baseline(paint: Paint, top: Float, bottom: Float): Float {
-        val m = paint.fontMetrics
-        return (top + bottom) / 2 - (m.ascent + m.descent) / 2
-    }
 
     private fun dp(value: Float): Float =
         TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value * scale, metrics)
@@ -356,6 +392,14 @@ internal class ShiftOverlayView(
     }
 }
 
+private fun lineHeightOf(paint: Paint): Float = paint.fontMetrics.let { it.descent - it.ascent }
+
+/** The baseline that centers [paint]'s text between [top] and [bottom]. */
+private fun baseline(paint: Paint, top: Float, bottom: Float): Float {
+    val m = paint.fontMetrics
+    return (top + bottom) / 2 - (m.ascent + m.descent) / 2
+}
+
 /**
  * Shows [ShiftOverlayView] over the ride screen for a few seconds, the way Ki2 shows shifting: a
  * window that never takes focus or touches and hides itself. Needs the "display over other apps"
@@ -377,39 +421,19 @@ class ShiftOverlay(context: Context) {
                 Timber.w("Shift overlay: no permission to draw over other apps")
                 return@post
             }
-            val panel = ShiftOverlayView(context, reading, end, config)
-            // Measured here against the screen width and the window sized to match, so the
-            // system's narrower first try for wrap-content windows never squeezes the bars.
-            panel.measure(
-                View.MeasureSpec.makeMeasureSpec(
-                    context.resources.displayMetrics.widthPixels,
-                    View.MeasureSpec.AT_MOST,
-                ),
-                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
-            )
+            // A transparent window over the whole screen that never takes a touch; the panel
+            // lays itself out in it, so it needs no screen size from here.
+            val panel = ShiftOverlayView(context, reading, end, config, fillsWindow = true)
             val params =
                 WindowManager.LayoutParams(
-                    panel.measuredWidth,
-                    panel.measuredHeight,
+                    WindowManager.LayoutParams.MATCH_PARENT,
+                    WindowManager.LayoutParams.MATCH_PARENT,
                     WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                     WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                         WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
                         WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                     PixelFormat.TRANSLUCENT,
                 )
-            val metrics = context.resources.displayMetrics
-            val (x, y) =
-                overlayOrigin(
-                    metrics.widthPixels,
-                    metrics.heightPixels,
-                    panel.measuredWidth,
-                    panel.measuredHeight,
-                    dp(SHIFT_OVERLAY_EDGE_MARGIN_DP),
-                    config,
-                )
-            params.gravity = Gravity.TOP or Gravity.START
-            params.x = x
-            params.y = y
             runCatching { windowManager.addView(panel, params) }
                 .onSuccess {
                     view = panel
@@ -425,15 +449,10 @@ class ShiftOverlay(context: Context) {
         view = null
     }
 
-    private fun dp(value: Int): Int = (value * context.resources.displayMetrics.density).toInt()
-
     private companion object {
         const val MS_PER_S = 1_000L
     }
 }
-
-/** How far, in dp, the shift overlay keeps from the side it is aligned to. */
-internal const val SHIFT_OVERLAY_EDGE_MARGIN_DP = 4
 
 /**
  * The top-left corner, in pixels, of a [panelWidth] by [panelHeight] overlay on a screen of

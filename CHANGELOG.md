@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.0.4
+
+- Shift overlay placement: a plain slider with a readout replaces the stepped one, whose 21 labels ran together, and the overlay can be dragged up and down in the screen sketch
+- The overlay draws in a transparent window over the whole screen and places itself in it, so it no longer depends on the screen size the app is told. On a Karoo that size did not match the screen: the gear bars came out half width and off center, and the placement sketch square with the overlay missing. The sketch now places the overlay the way the overlay does, in this app's own window
+- Gears as has no Off while the gear bars are off, since the gears are then all the overlay shows
+
 ## 4.0.3
 
 - Shift overlay layout: Small, Medium or Large; the header, gear bars, ratio and chainrings each on or off; the gears in teeth (F50 - R10), as gear numbers (F2 - R12) or not written. With the gear bars off the overlay shrinks to its text, and with the header off the gears take the end's color. A preview in the Shifting section follows every change

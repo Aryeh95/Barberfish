@@ -20,8 +20,8 @@ android {
         applicationId = "io.github.aryeh95.barberfish"
         minSdk = 26
         targetSdk = 34
-        versionCode = 17
-        versionName = "4.0.3"
+        versionCode = 18
+        versionName = "4.0.4"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Update channel: the Karoo polls this manifest for new versions.
         // Beta builds override it via MANIFEST_URL to point at the betafish repo.
