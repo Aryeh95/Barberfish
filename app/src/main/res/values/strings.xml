@@ -68,8 +68,16 @@
     <string name="power_zone_description">Current power zone, with zone coloring and integer or decimal display</string>
     <string name="max_power_name">Max Power</string>
     <string name="max_power_description">Maximum power reached this ride, with zone coloring</string>
+    <string name="wkg_name">W/kg</string>
+    <string name="wkg_description">Power to weight in W/kg, with smoothing and zone coloring</string>
     <string name="grade_name">Grade</string>
     <string name="grade_description">Current road gradient with gradient palette coloring</string>
+    <string name="vam_name">VAM</string>
+    <string name="vam_description">Vertical ascent speed in m/h or ft/h, with gradient coloring</string>
+    <string name="gears_name">Gears</string>
+    <string name="gears_description">Electronic drivetrain gears or ratio, colored at cassette ends and cross-chain</string>
+    <string name="tires_name">Tires</string>
+    <string name="tires_description">Front and rear Outrider tire pressures in one field, colored by target</string>
     <string name="elevation_sparkline_name">Profile</string>
     <string name="elevation_sparkline_description">Elevation profile of the route, drawn as a sparkline with gradient coloring and a position marker</string>
     <string name="avg_hr_name">Avg Heart Rate</string>

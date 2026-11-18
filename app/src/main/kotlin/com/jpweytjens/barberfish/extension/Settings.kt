@@ -133,6 +133,14 @@ sealed interface HUDSlotField {
 
     @Serializable data object RearTire : HUDSlotField
 
+    @Serializable data object Tires : HUDSlotField
+
+    @Serializable data object Wkg : HUDSlotField
+
+    @Serializable data object Vam : HUDSlotField
+
+    @Serializable data object Gears : HUDSlotField
+
     @Serializable data class AvgSpeed(val includePaused: Boolean = false) : HUDSlotField
 
     @Serializable data class Time(val kind: TimeKind = TimeKind.TOTAL) : HUDSlotField
@@ -162,7 +170,21 @@ data class HUDSlotConfig(
     // Tire slots only: the target pressure in [tireUnit] (0 leaves the value uncolored), and the
     // step, as a percentage of it, between the green, yellow, orange and red bands.
     val tireTarget: Double = 0.0,
+    val tireRearTarget: Double = 0.0,
     val tireBandPercent: Double = 10.0,
+    val tireOrientation: FieldOrientation = FieldOrientation.HORIZONTAL,
+    // Speed slot threshold coloring (mirrors SpeedFieldConfig).
+    val speedSource: SpeedThresholdSource = SpeedThresholdSource.FIXED,
+    val speedThresholdKph: Double = 0.0,
+    val speedRangeBelow: Double = 10.0,
+    val speedRangeAbove: Double = 10.0,
+    // W/kg, VAM and Gears slot options.
+    val wkgSource: WkgSource = WkgSource.S3,
+    val vamWindow: VamWindow = VamWindow.S30,
+    val gearFormat: GearDisplayFormat = GearDisplayFormat.TEETH,
+    val gearShowChainrings: Boolean = true,
+    // Optional field this slot swaps to while climbing (null keeps the primary field).
+    val climbSwapField: HUDSlotField? = null,
 )
 
 /**
@@ -343,6 +365,10 @@ data class SparklineConfig(
     val mode: SparklineMode? = null,
     @SerialName("enabled") private val legacyEnabled: Boolean? = null,
     val lookaheadKm: Int = 5,
+    // Optional rider-defined tap-cycle distance scales in meters (empty uses default 5/10/20 km),
+    // and the active scale in meters (null falls back to lookaheadKm * 1000).
+    val lookaheadScalesM: List<Int> = emptyList(),
+    val lookaheadMeters: Int? = null,
     // Legacy band-skip counts, superseded by climbEdge/descentEdge. Nothing writes them since
     // the edge sliders replaced the count selectors; they persist as migration input for stored
     // configs. Read them through `gradeEdges` rather than directly.
@@ -868,6 +894,149 @@ fun Context.streamMaxPowerFieldConfig(): Flow<MaxPowerFieldConfig> =
 suspend fun Context.saveMaxPowerFieldConfig(config: MaxPowerFieldConfig) =
     saveConfig(maxPowerFieldConfigKey, config)
 
+// --- WkgFieldConfig ---
+
+@Serializable
+enum class WkgSource(
+    val label: String,
+    val headerLabel: String,
+    val typeId: String,
+    val fieldId: String,
+) {
+    S0("0s", "W/kg", DataType.Type.POWER, DataType.Field.POWER),
+    S3(
+        "3s",
+        "3s W/kg",
+        DataType.Type.SMOOTHED_3S_AVERAGE_POWER,
+        DataType.Field.SMOOTHED_3S_AVERAGE_POWER,
+    ),
+    S5(
+        "5s",
+        "5s W/kg",
+        DataType.Type.SMOOTHED_5S_AVERAGE_POWER,
+        DataType.Field.SMOOTHED_5S_AVERAGE_POWER,
+    ),
+    S10(
+        "10s",
+        "10s W/kg",
+        DataType.Type.SMOOTHED_10S_AVERAGE_POWER,
+        DataType.Field.SMOOTHED_10S_AVERAGE_POWER,
+    ),
+    S30(
+        "30s",
+        "30s W/kg",
+        DataType.Type.SMOOTHED_30S_AVERAGE_POWER,
+        DataType.Field.SMOOTHED_30S_AVERAGE_POWER,
+    ),
+    AVG("Avg", "Avg W/kg", DataType.Type.AVERAGE_POWER, DataType.Field.AVERAGE_POWER),
+    NP("NP", "NP W/kg", DataType.Type.NORMALIZED_POWER, DataType.Field.NORMALIZED_POWER),
+    LAP("Lap", "Lap W/kg", DataType.Type.POWER_LAP, DataType.Field.AVERAGE_POWER),
+    LAST_LAP("LLap", "LL W/kg", DataType.Type.AVERAGE_POWER_LAST_LAP, DataType.Field.AVERAGE_POWER);
+
+    val isLastLap: Boolean
+        get() = this == LAST_LAP
+}
+
+@Serializable
+data class WkgFieldConfig(
+    val source: WkgSource = WkgSource.S3,
+    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
+)
+
+private val wkgFieldConfigKey = stringPreferencesKey("wkg_field_config")
+
+fun Context.streamWkgFieldConfig(): Flow<WkgFieldConfig> =
+    streamConfig(wkgFieldConfigKey, WkgFieldConfig())
+
+suspend fun Context.saveWkgFieldConfig(config: WkgFieldConfig) =
+    saveConfig(wkgFieldConfigKey, config)
+
+// --- VamFieldConfig ---
+
+@Serializable
+enum class VamWindow(val label: String, val headerLabel: String, val typeId: String) {
+    S0("0s", "VAM", DataType.Type.VERTICAL_SPEED),
+    S30("30s", "30s VAM", DataType.Type.AVERAGE_VERTICAL_SPEED_30S),
+    LAP("Lap", "Lap VAM", DataType.Type.AVERAGE_VERTICAL_SPEED_LAP),
+    AVG("Avg", "Avg VAM", DataType.Type.AVERAGE_VERTICAL_SPEED),
+}
+
+@Serializable
+data class VamFieldConfig(
+    val window: VamWindow = VamWindow.S30,
+    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
+)
+
+private val vamFieldConfigKey = stringPreferencesKey("vam_field_config")
+
+fun Context.streamVamFieldConfig(): Flow<VamFieldConfig> =
+    streamConfig(vamFieldConfigKey, VamFieldConfig())
+
+suspend fun Context.saveVamFieldConfig(config: VamFieldConfig) =
+    saveConfig(vamFieldConfigKey, config)
+
+// --- GearsFieldConfig ---
+
+@Serializable
+enum class GearDisplayFormat(val label: String) {
+    TEETH("Teeth"),
+    NUMBERS("Numbers"),
+    RATIO("Ratio"),
+}
+
+@Serializable
+data class GearsFieldConfig(
+    val format: GearDisplayFormat = GearDisplayFormat.TEETH,
+    val showChainrings: Boolean = true,
+    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
+)
+
+private val gearsFieldConfigKey = stringPreferencesKey("gears_field_config")
+
+fun Context.streamGearsFieldConfig(): Flow<GearsFieldConfig> =
+    streamConfig(gearsFieldConfigKey, GearsFieldConfig())
+
+suspend fun Context.saveGearsFieldConfig(config: GearsFieldConfig) =
+    saveConfig(gearsFieldConfigKey, config)
+
+// --- TiresFieldConfig & TireAlertConfig ---
+
+@Serializable
+data class TiresFieldConfig(
+    val unit: TirePressureUnit = TirePressureUnit.PSI,
+    val frontTarget: Double = 0.0,
+    val rearTarget: Double = 0.0,
+    val bandPercent: Double = 10.0,
+    val orientation: FieldOrientation = FieldOrientation.HORIZONTAL,
+    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
+)
+
+private val tiresFieldConfigKey = stringPreferencesKey("tires_field_config")
+
+fun Context.streamTiresFieldConfig(): Flow<TiresFieldConfig> =
+    streamConfig(tiresFieldConfigKey, TiresFieldConfig())
+
+suspend fun Context.saveTiresFieldConfig(config: TiresFieldConfig) =
+    saveConfig(tiresFieldConfigKey, config)
+
+@Serializable
+data class TireAlertConfig(
+    val enabled: Boolean = false,
+    val unit: TirePressureUnit = TirePressureUnit.PSI,
+    val frontTarget: Double = 0.0,
+    val rearTarget: Double = 0.0,
+    val bandPercent: Double = 10.0,
+    val dropRatePsiPerMin: Double = 1.5,
+)
+
+private val tireAlertConfigKey = stringPreferencesKey("tire_alert_config")
+
+fun Context.streamTireAlertConfig(): Flow<TireAlertConfig> =
+    streamConfig(tireAlertConfigKey, TireAlertConfig())
+
+suspend fun Context.saveTireAlertConfig(config: TireAlertConfig) =
+    saveConfig(tireAlertConfigKey, config)
+
 // --- GradeFieldConfig ---
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -1015,7 +1184,12 @@ data class ConfigSnapshot(
     val lastLapPowerField: LapPowerFieldConfig,
     val powerZoneField: PowerZoneFieldConfig,
     val maxPowerField: MaxPowerFieldConfig,
+    val wkgField: WkgFieldConfig,
     val gradeField: GradeFieldConfig,
+    val vamField: VamFieldConfig,
+    val gearsField: GearsFieldConfig,
+    val tiresField: TiresFieldConfig,
+    val tireAlert: TireAlertConfig,
     val windField: WindFieldConfig,
     val windSock: WindSockConfig,
     val avgSpeedTotal: AvgSpeedConfig,
@@ -1026,6 +1200,7 @@ data class ConfigSnapshot(
     val routeRemaining: RouteRemainingConfig,
     val zone: ZoneConfig,
     val dataFieldDesign: DataFieldDesignConfig,
+    val shiftOverlay: ShiftOverlayConfig,
 )
 
 fun Context.streamConfigSnapshot(): Flow<ConfigSnapshot> =
@@ -1059,7 +1234,12 @@ fun Context.streamConfigSnapshot(): Flow<ConfigSnapshot> =
                 lastLapPowerField = prefs.config(lastLapPowerFieldConfigKey, LapPowerFieldConfig()),
                 powerZoneField = prefs.config(powerZoneFieldConfigKey, PowerZoneFieldConfig()),
                 maxPowerField = prefs.config(maxPowerFieldConfigKey, MaxPowerFieldConfig()),
+                wkgField = prefs.config(wkgFieldConfigKey, WkgFieldConfig()),
                 gradeField = prefs.config(gradeFieldConfigKey, GradeFieldConfig()),
+                vamField = prefs.config(vamFieldConfigKey, VamFieldConfig()),
+                gearsField = prefs.config(gearsFieldConfigKey, GearsFieldConfig()),
+                tiresField = prefs.config(tiresFieldConfigKey, TiresFieldConfig()),
+                tireAlert = prefs.config(tireAlertConfigKey, TireAlertConfig()),
                 windField = prefs.config(windFieldConfigKey, WindFieldConfig()),
                 windSock = prefs.config(windSockConfigKey, WindSockConfig()),
                 avgSpeedTotal = prefs.config(avgSpeedTotalConfigKey, AvgSpeedConfig()),
@@ -1070,6 +1250,7 @@ fun Context.streamConfigSnapshot(): Flow<ConfigSnapshot> =
                 routeRemaining = prefs.config(routeRemainingConfigKey, RouteRemainingConfig()),
                 zone = prefs.config(zoneConfigKey, ZoneConfig()),
                 dataFieldDesign = prefs.config(dataFieldDesignConfigKey, DataFieldDesignConfig()),
+                shiftOverlay = prefs.config(shiftOverlayConfigKey, ShiftOverlayConfig()),
             )
         }
         .distinctUntilChanged()
@@ -1094,6 +1275,7 @@ enum class ShiftOverlayAlign(val label: String) {
 /** When the shift overlay shows. */
 enum class ShiftTrigger(val label: String) {
     END_COGS("End cogs"),
+    ENDS_AND_CROSS("Ends & cross"),
     EVERY_SHIFT("Every shift"),
 }
 
@@ -1135,6 +1317,7 @@ data class ShiftOverlayConfig(
     val gearText: ShiftGearText = ShiftGearText.TEETH,
     val showRatio: Boolean = true,
     val showChainrings: Boolean = true,
+    val batteryAlert: Boolean = true,
 ) {
     val height: Int
         get() = heightPercent ?: position.heightPercent

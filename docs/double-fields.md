@@ -12,6 +12,8 @@ Out of the box they show, side by side with icon and header:
 | 4 | Lap Avg Power | Lap Avg HR |
 | 5 | NP | Avg HR |
 | 6 | Grade | Distance Remaining |
+| 7 | Descent | Descent Remaining |
+| 8 | Grade | Elevation |
 
 In the Double fields section of the Barberfish app each Double has a card, like the Data fields cards: tap one to open it, showing what it holds beside a live preview, and its settings below.
 

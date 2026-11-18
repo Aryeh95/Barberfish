@@ -102,6 +102,12 @@
         displayName="@string/max_power_name"
         description="@string/max_power_description"
         graphical="true" />
+    <DataType
+        icon="@drawable/ic_col_power"
+        typeId="wkg"
+        displayName="@string/wkg_name"
+        description="@string/wkg_description"
+        graphical="true" />
     <!-- HR -->
     <DataType
         icon="@drawable/ic_col_hr"
@@ -202,10 +208,28 @@
         description="@string/wind_description"
         graphical="true" />
     <DataType
+        icon="@drawable/ic_gears"
+        typeId="gears"
+        displayName="@string/gears_name"
+        description="@string/gears_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_tire"
+        typeId="tires"
+        displayName="@string/tires_name"
+        description="@string/tires_description"
+        graphical="true" />
+    <DataType
         icon="@drawable/ic_grade"
         typeId="grade"
         displayName="@string/grade_name"
         description="@string/grade_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_arrow_outward"
+        typeId="vam"
+        displayName="@string/vam_name"
+        description="@string/vam_description"
         graphical="true" />
     <DataType
         icon="@drawable/ic_grade"

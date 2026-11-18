@@ -91,7 +91,11 @@ fun renderDoublePanelBitmap(
         alignRight = labelOnRight,
     )
     ValuePainter(canvas, spec, colors, context)
-        .draw(field, valueLeft, (valueRight - valueLeft).coerceAtLeast(1f))
+        .draw(
+            field.copy(colorMode = field.colorMode),
+            valueLeft,
+            (valueRight - valueLeft).coerceAtLeast(1f),
+        )
     return bitmap
 }
 
@@ -257,6 +261,21 @@ private class ValuePainter(
                 spec.valueFontPx,
                 if (zero.height() > 0) 100f * digitPx / zero.height() else digitPx,
             )
+        val dual = field.dualValues
+        if (dual != null) {
+            val panelDual =
+                renderDualValuesBitmap(
+                    dual = dual.copy(beside = true),
+                    colorMode = field.colorMode,
+                    colors = colors,
+                    bitmapHeightPx = (spec.heightPx * PANEL_DIGIT_FILL).toInt().coerceAtLeast(1),
+                    cellWidthPx = width,
+                    alignment = spec.alignment,
+                    context = context,
+                )
+            canvas.drawBitmap(panelDual, left, centreY - panelDual.height / 2f, null)
+            return
+        }
         val angle = field.windArrowDeg
         if (angle == null) drawFitted(text, paint, left, width, digitBaseline = true)
         else drawWind(text, angle, paint, left, width)

@@ -34,7 +34,7 @@ class SpeedField(private val karooSystem: KarooSystemService) :
         combine(context.streamSpeedFieldConfig(), karooSystem.streamUserProfile()) { cfg, profile ->
                 cfg to profile
             }
-            .flatMapLatest { (cfg, profile) -> coloredFlow(cfg, profile) }
+            .flatMapLatest { (cfg, profile) -> coloredStates(karooSystem, cfg, profile) }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
         combine(context.streamSpeedFieldConfig(), karooSystem.streamUserProfile()) { cfg, profile ->
@@ -42,65 +42,70 @@ class SpeedField(private val karooSystem: KarooSystemService) :
             }
             .flatMapLatest { (cfg, profile) -> cyclePreview(previewStates(cfg, profile)) }
 
-    private fun coloredFlow(cfg: SpeedFieldConfig, profile: UserProfile): Flow<FieldState> {
-        val liveFlow = karooSystem.streamDataFlow(cfg.smoothing.typeId)
-        return when (cfg.source) {
-            SpeedThresholdSource.FIXED -> {
-                val threshDisplay = ConvertType.SPEED.toDisplay(cfg.thresholdKph, profile)
-                liveFlow.map { state ->
-                    toFieldState(
-                        state,
-                        profile,
-                        cfg.smoothing,
-                        threshDisplay,
-                        cfg.rangePercentBelow,
-                        cfg.rangePercentAbove,
-                        cfg.colorMode,
-                    )
-                }
-            }
-            SpeedThresholdSource.AVG_TOTAL ->
-                avgColoredFlow(liveFlow, cfg, profile, includePaused = true)
-            SpeedThresholdSource.AVG_MOVING ->
-                avgColoredFlow(liveFlow, cfg, profile, includePaused = false)
-        }
-    }
-
-    private fun avgColoredFlow(
-        liveFlow: Flow<StreamState>,
-        cfg: SpeedFieldConfig,
-        profile: UserProfile,
-        includePaused: Boolean,
-    ): Flow<FieldState> {
-        val avgFlow = AvgSpeedField.avgSpeedRawMsFlow(karooSystem, includePaused)
-        // Warmup gate: ELAPSED_TIME (moving time) >= 30 s. ELAPSED_TIME excludes paused
-        // time, so 30 s cumulative motion means the rider has actually moved — handles both
-        // "first move" and "warmup elapsed" with one stateless check. Used regardless of
-        // whether the source is total or moving avg.
-        val elapsedFlow =
-            karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME).map { state ->
-                (state as? StreamState.Streaming)
-                    ?.dataPoint
-                    ?.values
-                    ?.get(DataType.Field.ELAPSED_TIME) ?: 0.0
-            }
-        return combine(liveFlow, avgFlow, elapsedFlow) { state, avgRawMs, elapsedMs ->
-            val threshDisplay =
-                if (elapsedMs >= WARMUP_MS) ConvertType.SPEED.apply(avgRawMs, profile) else 0.0
-            toFieldState(
-                state,
-                profile,
-                cfg.smoothing,
-                threshDisplay,
-                cfg.rangePercentBelow,
-                cfg.rangePercentAbove,
-                cfg.colorMode,
-            )
-        }
-    }
-
     companion object {
         private const val WARMUP_MS = 30_000.0
+
+        fun coloredStates(
+            karooSystem: KarooSystemService,
+            cfg: SpeedFieldConfig,
+            profile: UserProfile,
+        ): Flow<FieldState> {
+            val liveFlow = karooSystem.streamDataFlow(cfg.smoothing.typeId)
+            return when (cfg.source) {
+                SpeedThresholdSource.FIXED -> {
+                    val threshDisplay = ConvertType.SPEED.toDisplay(cfg.thresholdKph, profile)
+                    liveFlow.map { state ->
+                        toFieldState(
+                            state,
+                            profile,
+                            cfg.smoothing,
+                            threshDisplay,
+                            cfg.rangePercentBelow,
+                            cfg.rangePercentAbove,
+                            cfg.colorMode,
+                        )
+                    }
+                }
+                SpeedThresholdSource.AVG_TOTAL ->
+                    avgColoredFlow(karooSystem, liveFlow, cfg, profile, includePaused = true)
+                SpeedThresholdSource.AVG_MOVING ->
+                    avgColoredFlow(karooSystem, liveFlow, cfg, profile, includePaused = false)
+            }
+        }
+
+        private fun avgColoredFlow(
+            karooSystem: KarooSystemService,
+            liveFlow: Flow<StreamState>,
+            cfg: SpeedFieldConfig,
+            profile: UserProfile,
+            includePaused: Boolean,
+        ): Flow<FieldState> {
+            val avgFlow = AvgSpeedField.avgSpeedRawMsFlow(karooSystem, includePaused)
+            // Warmup gate: ELAPSED_TIME (moving time) >= 30 s. ELAPSED_TIME excludes paused
+            // time, so 30 s cumulative motion means the rider has actually moved — handles both
+            // "first move" and "warmup elapsed" with one stateless check. Used regardless of
+            // whether the source is total or moving avg.
+            val elapsedFlow =
+                karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME).map { state ->
+                    (state as? StreamState.Streaming)
+                        ?.dataPoint
+                        ?.values
+                        ?.get(DataType.Field.ELAPSED_TIME) ?: 0.0
+                }
+            return combine(liveFlow, avgFlow, elapsedFlow) { state, avgRawMs, elapsedMs ->
+                val threshDisplay =
+                    if (elapsedMs >= WARMUP_MS) ConvertType.SPEED.apply(avgRawMs, profile) else 0.0
+                toFieldState(
+                    state,
+                    profile,
+                    cfg.smoothing,
+                    threshDisplay,
+                    cfg.rangePercentBelow,
+                    cfg.rangePercentAbove,
+                    cfg.colorMode,
+                )
+            }
+        }
 
         fun toFieldState(
             state: StreamState,

@@ -3,9 +3,11 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceStatFieldConfig
+import com.jpweytjens.barberfish.extension.GearsFieldConfig
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
 import com.jpweytjens.barberfish.extension.HRFieldConfig
 import com.jpweytjens.barberfish.extension.HRMaxPercentFieldConfig
@@ -20,7 +22,9 @@ import com.jpweytjens.barberfish.extension.PowerFieldConfig
 import com.jpweytjens.barberfish.extension.PowerZoneFieldConfig
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.TimeConfig
+import com.jpweytjens.barberfish.extension.VamFieldConfig
 import com.jpweytjens.barberfish.extension.WindFieldConfig
+import com.jpweytjens.barberfish.extension.WkgFieldConfig
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.lapNumberFrom
 import com.jpweytjens.barberfish.extension.streamDataFlow
@@ -37,6 +41,17 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
 
+/** Mirrors the Speed slot's smoothing and threshold fields as a [SpeedFieldConfig]. */
+internal fun HUDSlotConfig.toSpeedFieldConfig(): SpeedFieldConfig =
+    SpeedFieldConfig(
+        smoothing = speedSmoothing,
+        source = speedSource,
+        thresholdKph = speedThresholdKph,
+        rangePercentBelow = speedRangeBelow,
+        rangePercentAbove = speedRangeAbove,
+        colorMode = colorMode,
+    )
+
 /**
  * Field states for one HUD slot config, live from the Karoo streams or cycled from the preview
  * ride. Every multi-slot field (the HUD and the Double fields) builds its slots here, so a slot
@@ -50,12 +65,36 @@ class HUDSlotSource(private val karooSystem: KarooSystemService) {
         zones: ZoneConfig,
         profile: UserProfile,
         context: Context,
+    ): Flow<FieldState> {
+        val swapField = slot.climbSwapField?.takeIf { it != slot.field }
+        val stream =
+            if (swapField == null) {
+                singleLiveFlow(slot, zones, profile, context)
+            } else {
+                climbActiveFlow(context, karooSystem).flatMapLatest { climbing ->
+                    val active =
+                        if (climbing) slot.copy(field = swapField, climbSwapField = null) else slot
+                    singleLiveFlow(active, zones, profile, context)
+                }
+            }
+        return stream.catch { e ->
+            // Isolate a slot failure: degrade it to Not available rather than let the
+            // exception cancel the whole HUD combine and freeze every slot for the ride.
+            Timber.e(e, "HUD slot ${slot.field} threw; showing Not available")
+            emit(FieldState.notAvailable())
+        }
+    }
+
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
+    private fun singleLiveFlow(
+        slot: HUDSlotConfig,
+        zones: ZoneConfig,
+        profile: UserProfile,
+        context: Context,
     ): Flow<FieldState> =
         when (slot.field) {
             HUDSlotField.Speed ->
-                karooSystem.streamDataFlow(slot.speedSmoothing.typeId).map {
-                    SpeedField.toFieldState(it, profile, slot.speedSmoothing)
-                }
+                SpeedField.coloredStates(karooSystem, slot.toSpeedFieldConfig(), profile)
             HUDSlotField.HR ->
                 karooSystem.streamDataFlow(DataType.Type.HEART_RATE).map {
                     HRField.toFieldState(it, profile, zones, slot.colorMode)
@@ -64,6 +103,13 @@ class HUDSlotSource(private val karooSystem: KarooSystemService) {
                 karooSystem.streamDataFlow(slot.powerSmoothing.typeId).map {
                     PowerField.toFieldState(it, slot.powerSmoothing, profile, zones, slot.colorMode)
                 }
+            HUDSlotField.Wkg ->
+                WkgField.liveStates(
+                    karooSystem,
+                    WkgFieldConfig(slot.wkgSource, slot.colorMode),
+                    profile,
+                    zones,
+                )
             HUDSlotField.Cadence ->
                 karooSystem.streamDataFlow(slot.cadenceSmoothing.typeId).map {
                     CadenceField.toFieldState(it, slot.cadenceSmoothing, slot.cadenceThreshold)
@@ -203,6 +249,19 @@ class HUDSlotSource(private val karooSystem: KarooSystemService) {
                         zones.gradePalette,
                     )
                 }
+            HUDSlotField.Vam ->
+                VamField.liveStates(
+                    context,
+                    karooSystem,
+                    VamFieldConfig(slot.vamWindow, slot.colorMode),
+                    profile,
+                    zones,
+                )
+            HUDSlotField.Gears ->
+                GearsField.liveStates(
+                    karooSystem,
+                    GearsFieldConfig(slot.gearFormat, slot.gearShowChainrings, slot.colorMode),
+                )
             HUDSlotField.Wind ->
                 WindField.liveStates(karooSystem, profile, WindFieldConfig(slot.colorMode))
                     .withSpeed(slot, karooSystem, profile)
@@ -219,6 +278,7 @@ class HUDSlotSource(private val karooSystem: KarooSystemService) {
                 ValueField.liveStates(karooSystem, ValueKind.ELEVATION, profile)
             HUDSlotField.FrontTire -> TirePressure.liveStates(karooSystem, TirePosition.FRONT, slot)
             HUDSlotField.RearTire -> TirePressure.liveStates(karooSystem, TirePosition.REAR, slot)
+            HUDSlotField.Tires -> TiresField.liveStates(karooSystem, TiresField.slotToConfig(slot))
             is HUDSlotField.AvgSpeed ->
                 AvgSpeedField.streamFlow(
                     karooSystem,
@@ -256,16 +316,34 @@ class HUDSlotSource(private val karooSystem: KarooSystemService) {
                     .flatMapLatest { (etaCfg, timeCfg) ->
                         ETAField.streamFlow(karooSystem, slot.field.kind, etaCfg, timeCfg.format)
                     }
-        }.catch { e ->
-            // Isolate a slot failure: degrade it to Not available rather than let the
-            // exception cancel the whole HUD combine and freeze every slot for the ride.
-            Timber.e(e, "HUD slot ${slot.field} threw; showing Not available")
-            emit(FieldState.notAvailable())
         }
 
     companion object {
-        /** The preview ride's states for [slotCfg], one per moment. */
+        /** The preview ride's states for [slotCfg], one per moment, swapping on climbs if set. */
         fun previewStates(
+            slotCfg: HUDSlotConfig,
+            timeCfg: TimeConfig,
+            profile: UserProfile,
+            zones: ZoneConfig,
+        ): List<FieldState> {
+            val base = singlePreviewStates(slotCfg, timeCfg, profile, zones)
+            val swap = slotCfg.climbSwapField?.takeIf { it != slotCfg.field } ?: return base
+            val climb =
+                singlePreviewStates(
+                    slotCfg.copy(field = swap, climbSwapField = null),
+                    timeCfg,
+                    profile,
+                    zones,
+                )
+            val count = maxOf(base.size, climb.size, PreviewRide.gradePercent.size)
+            return (0 until count).map { i ->
+                val grade = PreviewRide.gradePercent[i % PreviewRide.gradePercent.size]
+                if (grade >= CLIMB_SWAP_ON_PCT) climb[i % climb.size] else base[i % base.size]
+            }
+        }
+
+        @Suppress("CyclomaticComplexMethod", "LongMethod")
+        private fun singlePreviewStates(
             slotCfg: HUDSlotConfig,
             timeCfg: TimeConfig,
             profile: UserProfile,
@@ -278,10 +356,16 @@ class HUDSlotSource(private val karooSystem: KarooSystemService) {
                         profile,
                         zones,
                     )
+                HUDSlotField.Wkg ->
+                    WkgField.previewStates(
+                        WkgFieldConfig(slotCfg.wkgSource, slotCfg.colorMode),
+                        profile,
+                        zones,
+                    )
                 HUDSlotField.HR ->
                     HRField.previewStates(HRFieldConfig(slotCfg.colorMode), profile, zones)
                 HUDSlotField.Speed ->
-                    SpeedField.previewStates(SpeedFieldConfig(slotCfg.speedSmoothing), profile)
+                    SpeedField.previewStates(slotCfg.toSpeedFieldConfig(), profile)
                 HUDSlotField.Cadence ->
                     CadenceField.previewStates(
                         CadenceFieldConfig(slotCfg.cadenceSmoothing, slotCfg.cadenceThreshold)
@@ -375,8 +459,22 @@ class HUDSlotSource(private val karooSystem: KarooSystemService) {
                         ),
                         zones,
                     )
+                HUDSlotField.Vam ->
+                    VamField.previewStates(
+                        VamFieldConfig(slotCfg.vamWindow, slotCfg.colorMode),
+                        profile,
+                        zones,
+                    )
+                HUDSlotField.Gears ->
+                    GearsField.previewStates(
+                        GearsFieldConfig(
+                            slotCfg.gearFormat,
+                            slotCfg.gearShowChainrings,
+                            slotCfg.colorMode,
+                        )
+                    )
                 HUDSlotField.Wind ->
-                    WindField.previewStates(WindFieldConfig(slotCfg.colorMode))
+                    WindField.previewStates(WindFieldConfig(slotCfg.colorMode), profile)
                         .withSpeedPreview(slotCfg, profile)
                 HUDSlotField.Distance -> ValueField.previewStates(ValueKind.DISTANCE, profile)
                 HUDSlotField.DistanceRemaining ->
@@ -390,6 +488,7 @@ class HUDSlotSource(private val karooSystem: KarooSystemService) {
                 HUDSlotField.Elevation -> ValueField.previewStates(ValueKind.ELEVATION, profile)
                 HUDSlotField.FrontTire -> TirePressure.previewStates(TirePosition.FRONT, slotCfg)
                 HUDSlotField.RearTire -> TirePressure.previewStates(TirePosition.REAR, slotCfg)
+                HUDSlotField.Tires -> TiresField.previewStates(TiresField.slotToConfig(slotCfg))
                 is HUDSlotField.Time -> TimeField.previewStates(timeCfg, field.kind)
                 is HUDSlotField.ETA -> ETAField.previewStates(field.kind, timeCfg.format)
             }

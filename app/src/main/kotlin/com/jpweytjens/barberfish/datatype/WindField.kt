@@ -46,7 +46,10 @@ class WindField(private val karooSystem: KarooSystemService) :
             .flatMapLatest { (cfg, profile) -> liveStates(karooSystem, profile, cfg) }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
-        context.streamWindFieldConfig().flatMapLatest { cfg -> cyclePreview(previewStates(cfg)) }
+        combine(context.streamWindFieldConfig(), karooSystem.streamUserProfile()) { cfg, profile ->
+                cfg to profile
+            }
+            .flatMapLatest { (cfg, profile) -> cyclePreview(previewStates(cfg, profile)) }
 
     companion object {
         private const val LABEL = "Wind"
@@ -160,8 +163,10 @@ class WindField(private val karooSystem: KarooSystemService) :
             (this as? StreamState.Streaming)?.dataPoint?.values?.get(DataType.Field.SINGLE)
 
         /** Calm, a light tailwind, a crosswind, a strong front-right headwind. */
-        fun previewStates(cfg: WindFieldConfig): List<FieldState> {
-            val unit = WindUnit.KPH
+        fun previewStates(cfg: WindFieldConfig, profile: UserProfile? = null): List<FieldState> {
+            val unit = profile?.let(::windUnitFor) ?: WindUnit.KPH
+            val scale =
+                if (unit == WindUnit.MPH) WindUnit.MPH.perBand / WindUnit.KPH.perBand else 1.0
             data class Sample(val angleDeg: Float, val headwind: Double, val speed: Double)
             return listOf(
                     Sample(90f, 0.0, 1.0),
@@ -171,15 +176,17 @@ class WindField(private val karooSystem: KarooSystemService) :
                     Sample(180f, 29.0, 29.0),
                 )
                 .map { s ->
-                    val bands = windSockBands(s.speed, unit)
+                    val headwind = s.headwind * scale
+                    val speed = s.speed * scale
+                    val bands = windSockBands(speed, unit)
                     FieldState(
-                        primary = formatHeadwind(s.headwind),
+                        primary = formatHeadwind(headwind),
                         label = LABEL,
-                        color = windFieldColor(s.headwind, unit, cfg.colorMode),
+                        color = windFieldColor(headwind, unit, cfg.colorMode),
                         iconRes = ICON,
                         colorMode = cfg.colorMode,
                         windArrowDeg = if (bands > 0) s.angleDeg else null,
-                        windSpeedRow = formatHeadwind(s.speed),
+                        windSpeedRow = formatHeadwind(speed),
                     )
                 }
         }

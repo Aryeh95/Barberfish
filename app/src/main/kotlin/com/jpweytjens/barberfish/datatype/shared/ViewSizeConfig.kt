@@ -149,6 +149,12 @@ fun ViewConfig.toDoubleSlotSizeConfig(
     val slots = visibleSlots.coerceIn(1, 2)
     val span = (gridSize.first / slots).coerceAtLeast(1)
     val native = toViewSizeConfig(colSpanOverride = span, design = design)
+    if (slots == 1) {
+        return native.copy(
+            cellWidthPxOverride = viewSize.first.toFloat().takeIf { it > 0f },
+            showIcons = label.showsIcon,
+        )
+    }
     // A half of a half-width cell is a HUD slot's width: keep the HUD's label size there even on
     // the denser pages, whose native label size is for cells twice as wide.
     val hudLabel =

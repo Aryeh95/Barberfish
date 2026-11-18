@@ -255,7 +255,7 @@ internal fun sparklineBitmapFlow(
                     palette = zoneConfig.gradePalette,
                     // Sparkline always renders as a fill; use brand colors.
                     readable = false,
-                    lookaheadM = sparkCfg.lookaheadKm * 1000f,
+                    lookaheadM = sparkCfg.effectiveLookaheadM,
                     climbEdge = climbEdge,
                     descentEdge = descentEdge,
                     displayedRange = ratchetRange,

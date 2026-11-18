@@ -76,6 +76,7 @@ internal fun DoubleFieldsSection(
     onUpdate: (DoubleFieldKind, DoubleFieldConfig) -> Unit,
     initialSelected: DoubleFieldKind? = null,
     initialSelectedSlot: Int? = null,
+    outriderPaired: Boolean = true,
 ) {
     var selected by remember { mutableStateOf(initialSelected) }
     DoubleFieldKind.entries.forEach { kind ->
@@ -89,6 +90,7 @@ internal fun DoubleFieldsSection(
             onSelect = { selected = if (selected == kind) null else kind },
             onUpdate = { onUpdate(kind, it) },
             initialSelectedSlot = if (kind == initialSelected) initialSelectedSlot else null,
+            outriderPaired = outriderPaired,
         )
     }
 }
@@ -104,6 +106,7 @@ private fun DoubleFieldCard(
     onSelect: () -> Unit,
     onUpdate: (DoubleFieldConfig) -> Unit,
     initialSelectedSlot: Int?,
+    outriderPaired: Boolean,
 ) {
     var selectedSlot by remember { mutableStateOf(initialSelectedSlot) }
     ExpandableCard(
@@ -150,7 +153,7 @@ private fun DoubleFieldCard(
             onSelect = { onUpdate(config.copy(label = it)) },
             help = "Name each value by its icon, its header, both, or not at all.",
         )
-        DoubleSlotCard(config, selectedSlot, profile, onUpdate)
+        DoubleSlotCard(config, selectedSlot, profile, outriderPaired, onUpdate)
     }
 }
 
@@ -160,6 +163,7 @@ private fun DoubleSlotCard(
     config: DoubleFieldConfig,
     selectedSlot: Int?,
     profile: UserProfile,
+    outriderPaired: Boolean,
     onUpdate: (DoubleFieldConfig) -> Unit,
 ) {
     when (selectedSlot) {
@@ -169,6 +173,7 @@ private fun DoubleSlotCard(
                 profile = profile,
                 onUpdate = { onUpdate(config.copy(first = it)) },
                 windSpeedApplies = config.windSpeedApplies,
+                outriderPaired = outriderPaired,
             )
         1 ->
             HUDSlotFieldCard(
@@ -176,6 +181,7 @@ private fun DoubleSlotCard(
                 profile = profile,
                 onUpdate = { onUpdate(config.copy(second = it)) },
                 windSpeedApplies = config.windSpeedApplies,
+                outriderPaired = outriderPaired,
             )
     }
 }

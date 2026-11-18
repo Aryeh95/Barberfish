@@ -41,6 +41,8 @@ data class FieldState(
     val headwindLayout: Boolean = false,
     // Draw without the header row, the value taking its height, with the icon in the corner.
     val hideHeader: Boolean = false,
+    // Two independently colored values in one slot or cell (combined Front & Rear tires).
+    val dualValues: DualValues? = null,
 ) {
     companion object {
         fun searching(label: String = "", iconRes: Int? = null) =
@@ -127,7 +129,28 @@ sealed interface FieldColor {
     // band: how many steps a value is from its target either way. 0 green (on target), 1
     // yellow, 2 orange, 3 and beyond red. Tire pressure, where too high is as bad as too low.
     data class Deviation(val band: Int) : FieldColor
+
+    // Electronic drivetrain state: smallest cog (red), largest cog (blue), cross-chain (amber).
+    data class Drivetrain(val alert: DrivetrainAlert) : FieldColor
 }
+
+/** Alert state of an electronic drivetrain gear combination. */
+enum class DrivetrainAlert {
+    SMALLEST_COG,
+    LARGEST_COG,
+    CROSS_CHAIN,
+}
+
+/**
+ * Two independently colored numbers rendered in a single cell or slot (e.g. Front & Rear tires).
+ */
+data class DualValues(
+    val first: String,
+    val firstColor: FieldColor,
+    val second: String,
+    val secondColor: FieldColor,
+    val beside: Boolean = true,
+)
 
 fun zoneFieldColor(
     zone: Int,

@@ -1,5 +1,29 @@
 # Changelog
 
+## 4.1.0
+
+New data fields and slots:
+- W/kg field and HUD/Double slot: instant, 3s, 5s, 10s, 30s, Avg, NP, Lap, or Last Lap power divided by rider weight, with power zone coloring
+- VAM field and HUD/Double slot: instant, 30s, Lap, or Ride vertical ascent speed (m/h or ft/h) colored by road gradient
+- Gears field and HUD/Double slot: teeth (50-10), gear numbers (2-12), or gear ratio (5.00), colored red on the smallest cog, blue on the largest cog, and amber when cross-chained
+- Combined Front and Rear Tires field and HUD/Double slot: shows both Outrider tire pressures side by side or stacked in a single cell or slot, each colored independently against its own target
+
+New features:
+- Custom elevation profile tap-cycle scales: configure any comma-separated list of lookahead distances (such as 1, 3, 5, 10 mi or 1, 2, 5, 8 km) in the HUD elevation profile and Profile field settings to cycle through by tapping the profile during a ride
+- Climb-triggered slot auto-swap: any HUD column or Double half can swap to another field automatically while on a route climb or a >= 4% gradient (releasing below 2.5% to prevent flicker)
+- Tire alert overlay: background monitor for Outrider sensors that pops an alert banner over ride and map pages on rapid pressure loss (PSI/min) or critical red-band low pressure
+- Shift overlay cross-chain and battery alerts: new Ends + Cross trigger mode highlights big-big and small-small cross-chaining in amber, and low or critical derailleur batteries show a badge on the overlay with a one-time popup warning
+- Speed threshold coloring on HUD and Double Speed slots: Fixed, Avg total, and Avg moving targets with under/over bands, matching the standalone Speed field
+- Settings backup and restore: export or import all Barberfish+ settings as a portable JSON file from the new Backup and restore section
+
+Fixes and polish:
+- Shift overlay no longer fires a false popup when the front derailleur wakes up or drops out mid-ride, and cleanly dismisses any visible popup when turned off or when the extension stops
+- Outrider tire pressure reconnect hold is now anchored to the last live reading timestamp so Searching/Idle state flips cannot hold a stale value past its 10-minute hold window
+- Switching tire pressure units between PSI, bar, and kPa automatically converts configured target pressures, and tire cards show a pairing hint when no Outrider sensors are paired
+- Collapsed Double fields (when one half has no sensor or no route) now keep full native single-cell font size on 5-row and 6-row pages
+- Ride Remaining now shows Off route instead of values when riding off a loaded route
+- Wind previews in the config app and HUD/Double previews scale wind speeds for Imperial (mph) profiles
+
 ## 4.0.4
 
 - Shift overlay placement: a plain slider with a readout replaces the stepped one, whose 21 labels ran together, and the overlay can be dragged up and down in the screen sketch

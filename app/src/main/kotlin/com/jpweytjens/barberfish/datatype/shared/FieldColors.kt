@@ -53,6 +53,8 @@ internal val DANGER_ORANGE_READABLE_LIGHT = Color(0xFFED9800)
 // darker gold that stays readable as text on the day theme's white.
 internal val DEVIATION_YELLOW = Color(0xFFFEE08B)
 internal val DEVIATION_YELLOW_READABLE_LIGHT = Color(0xFFA67C00)
+internal val DRIVETRAIN_BLUE_READABLE_DARK = Color(0xFF4CA8F5)
+internal val DRIVETRAIN_BLUE_READABLE_LIGHT = Color(0xFF196DB3)
 
 // Sparkline palette — used by ElevationSparkline rendering. Call sites pass to Paint.color
 // via .toArgb() since android.graphics.Paint expects an Int, not a Compose Color.
@@ -196,6 +198,25 @@ internal fun FieldColor.toBackgroundColor(): Color? =
             else powerZoneColor(zone, palette, readable = false)
         is FieldColor.Grade -> gradeColor(percent, palette, readable = false)
         is FieldColor.Deviation -> deviationColor(band, isNightMode = true, readable = false)
+        is FieldColor.Drivetrain -> drivetrainColor(alert, isNightMode = true, readable = false)
+    }
+
+private fun drivetrainColor(
+    alert: DrivetrainAlert,
+    isNightMode: Boolean,
+    readable: Boolean,
+): Color =
+    when (alert) {
+        DrivetrainAlert.SMALLEST_COG ->
+            if (readable && isNightMode) RDYLGN_RED_READABLE_DARK else RDYLGN_RED
+        DrivetrainAlert.LARGEST_COG ->
+            when {
+                !readable -> CLIMBER_BLUE
+                isNightMode -> DRIVETRAIN_BLUE_READABLE_DARK
+                else -> DRIVETRAIN_BLUE_READABLE_LIGHT
+            }
+        DrivetrainAlert.CROSS_CHAIN ->
+            if (readable && !isNightMode) DANGER_ORANGE_READABLE_LIGHT else DANGER_ORANGE
     }
 
 /**
@@ -231,6 +252,7 @@ internal fun FieldColor.toColor(isNightMode: Boolean = true): Color? =
         is FieldColor.Grade ->
             gradeColor(percent, palette, readable = true, isNightMode = isNightMode)
         is FieldColor.Deviation -> deviationColor(band, isNightMode, readable = true)
+        is FieldColor.Drivetrain -> drivetrainColor(alert, isNightMode, readable = true)
     }
 
 internal fun FieldColor.toColorConfig(

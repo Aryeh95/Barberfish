@@ -6,17 +6,29 @@ A personal fork of [Barberfish](https://github.com/jpweytjens/Barberfish) with i
 - Eight [Double fields](docs/double-fields.md): two HUD slots in one cell, side by side or stacked.
   A half whose sensor is missing, or that needs a route when none is loaded, drops out and the
   other value fills the cell.
+- **Climb-triggered slot auto-swap**: any HUD or Double slot can swap to a secondary field (such as
+  Grade, VAM, W/kg, or Ascent Remaining) automatically when entering a route climb or a >= 4%
+  gradient, with hysteresis so rolling road never flickers.
+- **Custom HUD & Profile tap-cycle distance scales**: configure the exact lookahead distances
+  cycled when tapping the elevation profile during a ride (e.g. `1, 3, 5, 10` mi or `1, 2, 5, 8`
+  km).
+- **W/kg**, **VAM**, **Gears**, and **Combined Front & Rear Tires** as standalone fields, HUD
+  slots, and Double halves.
 - Elevation, Ascent and Descent as HUD and Double slots, so the colored grade and the current
   elevation can share a cell.
-- Avg, Lap Avg, Last Lap Avg and Max Cadence, as fields and slots.
+- Avg, Lap Avg, Last Lap Avg and Max Cadence, as fields and slots, plus Speed threshold coloring in
+  HUD and Double slots.
 - Ride Remaining can add the descent left as a third value, lay its values side by side, and hide
   its header.
 - Distance, Ascent and Descent read 0 before the ride and hold their total while paused.
-- Front and Rear tire pressure slots for Outrider TL sensors, read from the Outrider extension,
-  colored by how far the pressure is from a target.
+- Front, Rear, and combined Front & Rear tire pressure fields/slots for Outrider TL sensors,
+  colored per tire by how far the pressure is from a target, plus a background **Tire Alert
+  Overlay** that pops up over ride and map pages on rapid pressure drops or red-band pressure loss.
 - A shift overlay after [Ki2](https://github.com/valterc/ki2)'s: when you shift onto the smallest
-  or largest cog, the gears show over the ride screen for a moment, from any electronic groupset
-  paired with the Karoo, such as SRAM AXS.
+  or largest cog, into a cross-chained combination, or on every shift, the gears show over the ride
+  screen for a moment, with drivetrain low-battery badges and one-time low-battery warnings.
+- **Settings backup & restore**: export or import all Barberfish+ configurations as a portable JSON
+  file.
 - The Wind field, HUD slot and map windsock from the developer's unreleased wind work, with
   **Show speed** and a Headwind-style layout on the Wind slot (needs the Headwind extension).
 

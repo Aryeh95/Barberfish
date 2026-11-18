@@ -221,7 +221,7 @@ private fun panelRemoteViews(
             rv.setViewVisibility(ids[index], View.GONE)
             return@forEachIndexed
         }
-        val field: FieldState = slot.field
+        val field: FieldState = slot.field.copy(colorMode = slot.colorMode)
         val colors = field.color.toColorConfig(slot.colorMode, isNightMode, field.liveIcon)
         rv.setImageViewBitmap(ids[index], renderDoublePanelBitmap(field, colors, spec, context))
     }

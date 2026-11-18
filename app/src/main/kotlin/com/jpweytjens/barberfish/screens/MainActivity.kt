@@ -100,6 +100,7 @@ import com.jpweytjens.barberfish.datatype.CadenceField
 import com.jpweytjens.barberfish.datatype.CadenceStatField
 import com.jpweytjens.barberfish.datatype.CadenceStatKind
 import com.jpweytjens.barberfish.datatype.EffortField
+import com.jpweytjens.barberfish.datatype.GearsField
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HRField
 import com.jpweytjens.barberfish.datatype.HRMaxPercentField
@@ -113,7 +114,12 @@ import com.jpweytjens.barberfish.datatype.NPField
 import com.jpweytjens.barberfish.datatype.PowerField
 import com.jpweytjens.barberfish.datatype.PowerZoneField
 import com.jpweytjens.barberfish.datatype.SpeedField
+import com.jpweytjens.barberfish.datatype.TirePosition
+import com.jpweytjens.barberfish.datatype.TirePressure
+import com.jpweytjens.barberfish.datatype.TiresField
+import com.jpweytjens.barberfish.datatype.VamField
 import com.jpweytjens.barberfish.datatype.WindField
+import com.jpweytjens.barberfish.datatype.WkgField
 import com.jpweytjens.barberfish.datatype.applySparklineHeaderChrome
 import com.jpweytjens.barberfish.datatype.formatTime
 import com.jpweytjens.barberfish.datatype.shared.BackButtonTint
@@ -154,6 +160,7 @@ import com.jpweytjens.barberfish.extension.ETAConfig
 import com.jpweytjens.barberfish.extension.EffortFieldConfig
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.FieldOrientation
+import com.jpweytjens.barberfish.extension.GearsFieldConfig
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
 import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.GradePalette
@@ -182,12 +189,17 @@ import com.jpweytjens.barberfish.extension.SpeedThresholdSource
 import com.jpweytjens.barberfish.extension.ThresholdMode
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.TimeFormat
+import com.jpweytjens.barberfish.extension.TireAlertConfig
 import com.jpweytjens.barberfish.extension.TirePressureUnit
+import com.jpweytjens.barberfish.extension.TiresFieldConfig
+import com.jpweytjens.barberfish.extension.VamFieldConfig
 import com.jpweytjens.barberfish.extension.WindFieldConfig
 import com.jpweytjens.barberfish.extension.WindSockConfig
+import com.jpweytjens.barberfish.extension.WkgFieldConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.ZoneDisplayMode
+import com.jpweytjens.barberfish.extension.consumerFlow
 import com.jpweytjens.barberfish.extension.saveAvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.saveAvgSpeedConfig
 import com.jpweytjens.barberfish.extension.saveCadenceFieldConfig
@@ -197,6 +209,7 @@ import com.jpweytjens.barberfish.extension.saveDoubleFieldConfig
 import com.jpweytjens.barberfish.extension.saveETAConfig
 import com.jpweytjens.barberfish.extension.saveEffortFieldConfig
 import com.jpweytjens.barberfish.extension.saveFieldSparklineConfig
+import com.jpweytjens.barberfish.extension.saveGearsFieldConfig
 import com.jpweytjens.barberfish.extension.saveGradeFieldConfig
 import com.jpweytjens.barberfish.extension.saveGradeMapConfig
 import com.jpweytjens.barberfish.extension.saveHRFieldConfig
@@ -214,13 +227,17 @@ import com.jpweytjens.barberfish.extension.saveRouteRemainingConfig
 import com.jpweytjens.barberfish.extension.saveShiftOverlayConfig
 import com.jpweytjens.barberfish.extension.saveSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.saveTimeConfig
+import com.jpweytjens.barberfish.extension.saveTireAlertConfig
+import com.jpweytjens.barberfish.extension.saveTiresFieldConfig
+import com.jpweytjens.barberfish.extension.saveVamFieldConfig
 import com.jpweytjens.barberfish.extension.saveWindFieldConfig
 import com.jpweytjens.barberfish.extension.saveWindSockConfig
+import com.jpweytjens.barberfish.extension.saveWkgFieldConfig
 import com.jpweytjens.barberfish.extension.saveZoneConfig
 import com.jpweytjens.barberfish.extension.streamConfigSnapshot
-import com.jpweytjens.barberfish.extension.streamShiftOverlayConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import io.hammerhead.karooext.KarooSystemService
+import io.hammerhead.karooext.models.SavedDevices
 import io.hammerhead.karooext.models.UserProfile
 import io.hammerhead.karooext.models.ViewConfig
 import java.util.Locale
@@ -330,7 +347,13 @@ class MainActivity : ComponentActivity() {
         var lastLapPowerFieldConfig by remember { mutableStateOf(LapPowerFieldConfig()) }
         var powerZoneFieldConfig by remember { mutableStateOf(PowerZoneFieldConfig()) }
         var maxPowerFieldConfig by remember { mutableStateOf(MaxPowerFieldConfig()) }
+        var wkgFieldConfig by remember { mutableStateOf(WkgFieldConfig()) }
         var gradeFieldConfig by remember { mutableStateOf(GradeFieldConfig()) }
+        var vamFieldConfig by remember { mutableStateOf(VamFieldConfig()) }
+        var gearsFieldConfig by remember { mutableStateOf(GearsFieldConfig()) }
+        var tiresFieldConfig by remember { mutableStateOf(TiresFieldConfig()) }
+        var tireAlertConfig by remember { mutableStateOf(TireAlertConfig()) }
+        var outriderPaired by remember { mutableStateOf(true) }
         var avgTotalConfig by remember { mutableStateOf(AvgSpeedConfig()) }
         var avgMovingConfig by remember { mutableStateOf(AvgSpeedConfig()) }
         var timeConfig by remember { mutableStateOf(TimeConfig()) }
@@ -368,6 +391,8 @@ class MainActivity : ComponentActivity() {
         var timeExpanded by remember { mutableStateOf(false) }
         var designExpanded by remember { mutableStateOf(false) }
         var shiftingExpanded by remember { mutableStateOf(false) }
+        var tireAlertsExpanded by remember { mutableStateOf(false) }
+        var backupExpanded by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) {
             launch {
@@ -396,7 +421,13 @@ class MainActivity : ComponentActivity() {
                     lastLapPowerFieldConfig = snapshot.lastLapPowerField
                     powerZoneFieldConfig = snapshot.powerZoneField
                     maxPowerFieldConfig = snapshot.maxPowerField
+                    wkgFieldConfig = snapshot.wkgField
                     gradeFieldConfig = snapshot.gradeField
+                    vamFieldConfig = snapshot.vamField
+                    gearsFieldConfig = snapshot.gearsField
+                    tiresFieldConfig = snapshot.tiresField
+                    tireAlertConfig = snapshot.tireAlert
+                    shiftOverlayConfig = snapshot.shiftOverlay
                     avgTotalConfig = snapshot.avgSpeedTotal
                     avgMovingConfig = snapshot.avgSpeedMoving
                     timeConfig = snapshot.time
@@ -408,7 +439,17 @@ class MainActivity : ComponentActivity() {
                 }
             }
             launch { karooSystem.streamUserProfile().collect { userProfile = it } }
-            launch { streamShiftOverlayConfig().collect { shiftOverlayConfig = it } }
+            launch {
+                karooSystem.consumerFlow<SavedDevices>().collect { saved ->
+                    outriderPaired =
+                        saved.devices.any { device ->
+                            device.supportedDataTypes.any { typeId ->
+                                typeId == TirePosition.FRONT.streamId ||
+                                    typeId == TirePosition.REAR.streamId
+                            }
+                        }
+                }
+            }
         }
 
         val screenshotMode = remember { intent?.getBooleanExtra("screenshot", false) == true }
@@ -459,6 +500,7 @@ class MainActivity : ComponentActivity() {
                                 hudSparklineConfig = updated
                                 lifecycleScope.launch { saveHudSparklineConfig(updated) }
                             },
+                            outriderPaired = outriderPaired,
                         )
                     } // end HUD
 
@@ -476,6 +518,7 @@ class MainActivity : ComponentActivity() {
                                 doubleConfigs = doubleConfigs + (kind to updated)
                                 lifecycleScope.launch { saveDoubleFieldConfig(kind, updated) }
                             },
+                            outriderPaired = outriderPaired,
                         )
                     } // end Double fields
 
@@ -532,7 +575,9 @@ class MainActivity : ComponentActivity() {
                             CadenceField.previewStates(cadenceFieldConfig)
                         }
                     val windPreviewStates =
-                        remember(windFieldConfig) { WindField.previewStates(windFieldConfig) }
+                        remember(windFieldConfig, userProfile) {
+                            WindField.previewStates(windFieldConfig, userProfile)
+                        }
                     val avgPowerPreviewStates =
                         remember(avgPowerFieldConfig, userProfile, zoneConfig) {
                             AvgPowerField.previewStates(
@@ -579,10 +624,22 @@ class MainActivity : ComponentActivity() {
                                 zoneConfig,
                             )
                         }
+                    val wkgPreviewStates =
+                        remember(wkgFieldConfig, userProfile, zoneConfig) {
+                            WkgField.previewStates(wkgFieldConfig, userProfile, zoneConfig)
+                        }
                     val gradePreviewStates =
                         remember(gradeFieldConfig, zoneConfig) {
                             GradeField.previewStates(gradeFieldConfig, zoneConfig)
                         }
+                    val vamPreviewStates =
+                        remember(vamFieldConfig, userProfile, zoneConfig) {
+                            VamField.previewStates(vamFieldConfig, userProfile, zoneConfig)
+                        }
+                    val gearsPreviewStates =
+                        remember(gearsFieldConfig) { GearsField.previewStates(gearsFieldConfig) }
+                    val tiresPreviewStates =
+                        remember(tiresFieldConfig) { TiresField.previewStates(tiresFieldConfig) }
                     val effortPreviewStates =
                         remember(effortFieldConfig, userProfile) {
                             EffortField.previewStates(userProfile, effortFieldConfig)
@@ -779,6 +836,34 @@ class MainActivity : ComponentActivity() {
                                     lifecycleScope.launch {
                                         saveMaxPowerFieldConfig(maxPowerFieldConfig)
                                     }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "W/KG",
+                            typeId = "wkg",
+                            description = "Watts per kilogram with power zone coloring.",
+                            previewFields = wkgPreviewStates,
+                            colorMode = wkgFieldConfig.colorMode,
+                            selected = selectedDataField == "W/KG",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "W/KG") null else "W/KG"
+                            },
+                        ) {
+                            WkgSourceControls(
+                                selected = wkgFieldConfig.source,
+                                onSelected = { src ->
+                                    wkgFieldConfig = wkgFieldConfig.copy(source = src)
+                                    lifecycleScope.launch { saveWkgFieldConfig(wkgFieldConfig) }
+                                },
+                            )
+                            ZoneColorSlider(
+                                selected = wkgFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    wkgFieldConfig = wkgFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch { saveWkgFieldConfig(wkgFieldConfig) }
                                 },
                             )
                         }
@@ -1219,6 +1304,72 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
+                        ControlLabel("SHIFTING", modifier = Modifier.padding(top = 8.dp))
+                        FieldCard(
+                            title = "GEARS",
+                            typeId = "gears",
+                            description =
+                                "Current electronic drivetrain gear with end-cog and cross-chain coloring.",
+                            previewFields = gearsPreviewStates,
+                            colorMode = gearsFieldConfig.colorMode,
+                            selected = selectedDataField == "GEARS",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "GEARS") null else "GEARS"
+                            },
+                        ) {
+                            GearsFormatControls(
+                                format = gearsFieldConfig.format,
+                                showChainrings = gearsFieldConfig.showChainrings,
+                                onFormatChange = { fmt ->
+                                    gearsFieldConfig = gearsFieldConfig.copy(format = fmt)
+                                    lifecycleScope.launch { saveGearsFieldConfig(gearsFieldConfig) }
+                                },
+                                onChainringsChange = { show ->
+                                    gearsFieldConfig = gearsFieldConfig.copy(showChainrings = show)
+                                    lifecycleScope.launch { saveGearsFieldConfig(gearsFieldConfig) }
+                                },
+                            )
+                            ZoneColorSlider(
+                                selected = gearsFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    gearsFieldConfig = gearsFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch { saveGearsFieldConfig(gearsFieldConfig) }
+                                },
+                            )
+                        }
+
+                        ControlLabel("TIRES", modifier = Modifier.padding(top = 8.dp))
+                        FieldCard(
+                            title = "TIRES",
+                            typeId = "tires",
+                            description =
+                                "Combined front and rear Outrider tire pressures with per-tire target coloring.",
+                            previewFields = tiresPreviewStates,
+                            colorMode = tiresFieldConfig.colorMode,
+                            selected = selectedDataField == "TIRES",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "TIRES") null else "TIRES"
+                            },
+                        ) {
+                            DualTireFieldControls(
+                                config = tiresFieldConfig,
+                                outriderPaired = outriderPaired,
+                                onUpdate = { updated ->
+                                    tiresFieldConfig = updated
+                                    lifecycleScope.launch { saveTiresFieldConfig(updated) }
+                                },
+                            )
+                            ZoneColorSlider(
+                                selected = tiresFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    tiresFieldConfig = tiresFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch { saveTiresFieldConfig(tiresFieldConfig) }
+                                },
+                            )
+                        }
+
                         ControlLabel("CLIMBING", modifier = Modifier.padding(top = 8.dp))
                         FieldCard(
                             title = "GRADE",
@@ -1258,6 +1409,35 @@ class MainActivity : ComponentActivity() {
                                 onChange = { on ->
                                     gradeFieldConfig = gradeFieldConfig.copy(showPercentSign = on)
                                     lifecycleScope.launch { saveGradeFieldConfig(gradeFieldConfig) }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "VAM",
+                            typeId = "vam",
+                            description =
+                                "Vertical ascent speed (${ConvertType.ELEVATION.unit(userProfile)}/h) " +
+                                    "with grade coloring.",
+                            previewFields = vamPreviewStates,
+                            colorMode = vamFieldConfig.colorMode,
+                            selected = selectedDataField == "VAM",
+                            onSelect = {
+                                selectedDataField = if (selectedDataField == "VAM") null else "VAM"
+                            },
+                        ) {
+                            VamWindowControls(
+                                selected = vamFieldConfig.window,
+                                onSelected = { win ->
+                                    vamFieldConfig = vamFieldConfig.copy(window = win)
+                                    lifecycleScope.launch { saveVamFieldConfig(vamFieldConfig) }
+                                },
+                            )
+                            ZoneColorSlider(
+                                selected = vamFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    vamFieldConfig = vamFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch { saveVamFieldConfig(vamFieldConfig) }
                                 },
                             )
                         }
@@ -1382,6 +1562,18 @@ class MainActivity : ComponentActivity() {
                     } // end Shifting
 
                     CollapsibleSection(
+                        section = ConfigSection.TIRE_ALERTS,
+                        expanded = tireAlertsExpanded,
+                        onToggle = { tireAlertsExpanded = !tireAlertsExpanded },
+                    ) {
+                        TireAlertSectionContent(tireAlertConfig, overlayAllowed, outriderPaired) {
+                            updated ->
+                            tireAlertConfig = updated
+                            lifecycleScope.launch { saveTireAlertConfig(updated) }
+                        }
+                    } // end Tire alerts
+
+                    CollapsibleSection(
                         section = ConfigSection.ETA,
                         expanded = etaExpanded,
                         onToggle = { etaExpanded = !etaExpanded },
@@ -1426,6 +1618,13 @@ class MainActivity : ComponentActivity() {
                             lifecycleScope.launch { saveDataFieldDesignConfig(updated) }
                         }
                     } // end Data Field Design
+                    CollapsibleSection(
+                        section = ConfigSection.BACKUP,
+                        expanded = backupExpanded,
+                        onToggle = { backupExpanded = !backupExpanded },
+                    ) {
+                        BackupSectionContent()
+                    } // end Backup & restore
                     Spacer(modifier = Modifier.height(72.dp))
                 }
                 if (!screenshotMode) {
@@ -1764,6 +1963,12 @@ internal enum class ConfigSection(
         "Show the gears over the ride screen when you reach the end of the cassette",
         R.drawable.ic_section_shifting,
     ),
+    TIRE_ALERTS(
+        "Tire alerts",
+        "tire-alerts",
+        "Popup alert on rapid pressure loss or critical low pressure",
+        R.drawable.ic_section_tires,
+    ),
     ETA("ETA", "eta", "Time of arrival estimation", R.drawable.ic_finish_flag),
     TIME("Time", "time", "Format for time and duration fields", R.drawable.ic_stopwatch),
     DATA_FIELD_DESIGN(
@@ -1771,6 +1976,12 @@ internal enum class ConfigSection(
         "data-field-design",
         "Match Karoo's icon and label-size settings for Barberfish fields",
         R.drawable.ic_section_grid,
+    ),
+    BACKUP(
+        "Backup & restore",
+        "backup",
+        "Export or import all Barberfish+ settings as JSON",
+        R.drawable.ic_section_backup,
     ),
 }
 
@@ -2333,7 +2544,7 @@ private fun TimeFormatPreview(format: TimeFormat) {
 }
 
 @Composable
-private fun CommitOnFocusLossTextField(
+internal fun CommitOnFocusLossTextField(
     text: String,
     onTextChange: (String) -> Unit,
     onCommit: () -> Unit,
@@ -2365,7 +2576,7 @@ private fun CommitOnFocusLossTextField(
 }
 
 /** How a number is shown to and read from the rider: display units, formatting, keyboard. */
-private class InputUnit(
+internal class InputUnit(
     val format: (Double) -> String,
     val parse: (Double) -> Double,
     val keyboardType: KeyboardType,
@@ -2387,7 +2598,7 @@ private val RPM_INPUT_UNIT =
 
 /** A value where 0 means unset and shows as an empty field. */
 @Composable
-private fun NumberInput(
+internal fun NumberInput(
     value: Double,
     unit: InputUnit,
     placeholder: String,
@@ -2422,7 +2633,7 @@ private fun NullableNumberInput(
 }
 
 @Composable
-private fun RangeInput(value: Double, onValueChange: (Double) -> Unit) {
+internal fun RangeInput(value: Double, onValueChange: (Double) -> Unit) {
     var text by remember(value) { mutableStateOf(value.toString()) }
     CommitOnFocusLossTextField(
         text = text,
@@ -2579,7 +2790,7 @@ internal fun CadenceThresholdControls(
     )
 }
 
-private val PRESSURE_INPUT_UNIT =
+internal val PRESSURE_INPUT_UNIT =
     InputUnit(
         format = { "%.2f".format(Locale.ROOT, it).trimEnd('0').trimEnd('.') },
         parse = { it },
@@ -2591,12 +2802,27 @@ private val PRESSURE_INPUT_UNIT =
  * of the target, then yellow, orange and red each step further, above or below.
  */
 @Composable
-internal fun TireControls(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
+internal fun TireControls(
+    slot: HUDSlotConfig,
+    outriderPaired: Boolean = true,
+    onUpdate: (HUDSlotConfig) -> Unit,
+) {
+    if (!outriderPaired) {
+        HelperText("Pair Outrider TL sensors in the Outrider extension to stream tire pressure.")
+    }
     ChoiceRow(
         label = "UNIT",
         options = TirePressureUnit.entries.map { it to it.label },
         selected = slot.tireUnit,
-        onSelect = { onUpdate(slot.copy(tireUnit = it)) },
+        onSelect = { nextUnit ->
+            onUpdate(
+                slot.copy(
+                    tireUnit = nextUnit,
+                    tireTarget =
+                        TirePressure.convertTarget(slot.tireTarget, slot.tireUnit, nextUnit),
+                )
+            )
+        },
         help = "The unit set in the Outrider app. The sensor sends its pressure in it.",
     )
     ControlLabel("TARGET (${slot.tireUnit.label})")

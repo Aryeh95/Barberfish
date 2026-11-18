@@ -48,6 +48,7 @@ import androidx.compose.ui.text.font.DeviceFontFamilyName
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jpweytjens.barberfish.R
@@ -58,6 +59,7 @@ import com.jpweytjens.barberfish.datatype.applySparklineHeaderChrome
 import com.jpweytjens.barberfish.datatype.cadenceStatKind
 import com.jpweytjens.barberfish.datatype.shared.BarberfishYellow
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
+import com.jpweytjens.barberfish.datatype.shared.DEFAULT_LOOKAHEAD_SCALES_M
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.Grey100
 import com.jpweytjens.barberfish.datatype.shared.Grey200
@@ -67,6 +69,13 @@ import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.colDeRatesClimbsFixture
 import com.jpweytjens.barberfish.datatype.shared.colDeRatesElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.colDeRatesPoisFixture
+import com.jpweytjens.barberfish.datatype.shared.effectiveLookaheadM
+import com.jpweytjens.barberfish.datatype.shared.effectiveLookaheadMInt
+import com.jpweytjens.barberfish.datatype.shared.effectiveScalesM
+import com.jpweytjens.barberfish.datatype.shared.formatLookaheadNumber
+import com.jpweytjens.barberfish.datatype.shared.formatLookaheadPill
+import com.jpweytjens.barberfish.datatype.shared.formatLookaheadScalesInput
+import com.jpweytjens.barberfish.datatype.shared.parseLookaheadScalesInput
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
@@ -74,7 +83,10 @@ import com.jpweytjens.barberfish.datatype.shared.resolveClimbReveal
 import com.jpweytjens.barberfish.datatype.shared.rvvClimbsFixture
 import com.jpweytjens.barberfish.datatype.shared.rvvPoisFixture
 import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
+import com.jpweytjens.barberfish.datatype.shared.withCustomScalesM
+import com.jpweytjens.barberfish.datatype.shared.withLookaheadMeters
 import com.jpweytjens.barberfish.datatype.sparklineHeaderPx
+import com.jpweytjens.barberfish.datatype.toSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.ElevationZoom
@@ -92,6 +104,7 @@ import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.ZoneDisplayMode
 import io.hammerhead.karooext.models.UserProfile
 import io.hammerhead.karooext.models.ViewConfig
+import kotlin.math.abs
 import kotlinx.coroutines.delay
 
 private sealed interface HudSelection {
@@ -131,6 +144,7 @@ internal fun HUDConfigSection(
     onUpdate: (HUDConfig) -> Unit,
     onSparklineUpdate: (SparklineConfig) -> Unit,
     initialSelectedSlot: Int? = null,
+    outriderPaired: Boolean = true,
 ) {
     // initialSelectedSlot is the column selected when the section first composes, so a screenshot
     // can show a slot's card open. The config screen leaves it null: nothing is selected until
@@ -200,6 +214,7 @@ internal fun HUDConfigSection(
                     }
                 )
             },
+            outriderPaired = outriderPaired,
         )
     }
     if (stripSelected && sparklineConfig.hudMode != SparklineMode.OFF) {
@@ -333,7 +348,7 @@ internal fun SparklinePreview(
                         palette = zoneConfig.gradePalette,
                         // Sparkline always renders as a fill; use brand colors.
                         readable = false,
-                        lookaheadM = sparklineConfig.lookaheadKm * 1_000f,
+                        lookaheadM = sparklineConfig.effectiveLookaheadM,
                         climbEdge = climbEdge,
                         descentEdge = descentEdge,
                         displayedRange = displayedRange,
@@ -557,11 +572,12 @@ private fun SparklineModeToggle(mode: SparklineMode, onSelect: (SparklineMode) -
 
 // Slot fields that take a zone or threshold color, and so show the ZONE COLOR control.
 private val TIRE_SLOT_FIELDS: Set<HUDSlotField> =
-    setOf(HUDSlotField.FrontTire, HUDSlotField.RearTire)
+    setOf(HUDSlotField.FrontTire, HUDSlotField.RearTire, HUDSlotField.Tires)
 
 private val ZONE_COLORED_SLOT_FIELDS: Set<HUDSlotField> =
     setOf(
         HUDSlotField.Power,
+        HUDSlotField.Wkg,
         HUDSlotField.AvgPower,
         HUDSlotField.NP,
         HUDSlotField.LapPower,
@@ -575,7 +591,10 @@ private val ZONE_COLORED_SLOT_FIELDS: Set<HUDSlotField> =
         HUDSlotField.HRMaxPercent,
         HUDSlotField.MaxHR,
         HUDSlotField.HRZone,
+        HUDSlotField.Speed,
         HUDSlotField.Grade,
+        HUDSlotField.Vam,
+        HUDSlotField.Gears,
         HUDSlotField.Wind,
         HUDSlotField.Cadence,
     )
@@ -589,6 +608,7 @@ internal fun HUDSlotFieldCard(
     // False where the slot's host draws the wind without the ride speed (a stacked or label-free
     // Double): the Wind slot's Show speed options are hidden, their stored values kept.
     windSpeedApplies: Boolean = true,
+    outriderPaired: Boolean = true,
 ) {
     Column(
         modifier =
@@ -601,58 +621,13 @@ internal fun HUDSlotFieldCard(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             HUDFieldTypeDropdown(slot = slot, onUpdate = onUpdate)
+            ClimbSwapDropdown(slot = slot, onUpdate = onUpdate)
         }
         Column(
             modifier = Modifier.fillMaxWidth().background(Grey200).padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            when (slot.field) {
-                HUDSlotField.Power -> HUDPowerCard(slot, onUpdate)
-                HUDSlotField.AvgPower -> {}
-                HUDSlotField.NP -> {}
-                HUDSlotField.LapPower -> {}
-                HUDSlotField.LastLapPower -> {}
-                HUDSlotField.PowerZone -> {}
-                HUDSlotField.MaxPower -> {}
-                HUDSlotField.HR -> {}
-                HUDSlotField.AvgHR -> {}
-                HUDSlotField.LapAvgHR -> {}
-                HUDSlotField.LastLapAvgHR -> {}
-                HUDSlotField.HRMaxPercent -> {}
-                HUDSlotField.MaxHR -> {}
-                HUDSlotField.HRZone -> {}
-                HUDSlotField.Speed -> HUDSpeedCard(slot, onUpdate)
-                is HUDSlotField.AvgSpeed ->
-                    AvgSpeedThresholdControls(
-                        config = slot.avgSpeedConfig,
-                        profile = profile,
-                        onConfigChange = { onUpdate(slot.copy(avgSpeedConfig = it)) },
-                    )
-                HUDSlotField.Cadence -> HUDCadenceCard(slot, onUpdate)
-                HUDSlotField.AvgCadence,
-                HUDSlotField.LapAvgCadence,
-                HUDSlotField.LastLapAvgCadence,
-                HUDSlotField.MaxCadence ->
-                    CadenceThresholdControls(
-                        config = slot.cadenceThreshold,
-                        onConfigChange = { onUpdate(slot.copy(cadenceThreshold = it)) },
-                    )
-                HUDSlotField.Grade -> HUDGradeCard(slot, onUpdate)
-                HUDSlotField.Wind ->
-                    if (windSpeedApplies) HUDWindCard(slot, onUpdate)
-                    else HelperText("Show speed works when the Double is horizontal with a label.")
-                HUDSlotField.Distance -> {}
-                HUDSlotField.DistanceRemaining -> {}
-                HUDSlotField.ElevationRemaining -> {}
-                HUDSlotField.DescentRemaining -> {}
-                HUDSlotField.Ascent -> {}
-                HUDSlotField.Descent -> {}
-                HUDSlotField.Elevation -> {}
-                HUDSlotField.FrontTire,
-                HUDSlotField.RearTire -> TireControls(slot, onUpdate)
-                is HUDSlotField.Time -> {}
-                is HUDSlotField.ETA -> {}
-            }
+            HUDSlotSpecificControls(slot, profile, windSpeedApplies, outriderPaired, onUpdate)
             if (
                 slot.field in ZONE_COLORED_SLOT_FIELDS ||
                     slot.field.cadenceStatKind != null ||
@@ -673,10 +648,61 @@ internal fun HUDSlotFieldCard(
     }
 }
 
+@Suppress("CyclomaticComplexMethod")
+@Composable
+private fun HUDSlotSpecificControls(
+    slot: HUDSlotConfig,
+    profile: UserProfile,
+    windSpeedApplies: Boolean,
+    outriderPaired: Boolean,
+    onUpdate: (HUDSlotConfig) -> Unit,
+) {
+    when (slot.field) {
+        HUDSlotField.Power -> HUDPowerCard(slot, onUpdate)
+        HUDSlotField.Wkg ->
+            WkgSourceControls(slot.wkgSource) { onUpdate(slot.copy(wkgSource = it)) }
+        HUDSlotField.Speed -> HUDSpeedCard(slot, profile, onUpdate)
+        is HUDSlotField.AvgSpeed ->
+            AvgSpeedThresholdControls(
+                config = slot.avgSpeedConfig,
+                profile = profile,
+                onConfigChange = { onUpdate(slot.copy(avgSpeedConfig = it)) },
+            )
+        HUDSlotField.Cadence -> HUDCadenceCard(slot, onUpdate)
+        HUDSlotField.AvgCadence,
+        HUDSlotField.LapAvgCadence,
+        HUDSlotField.LastLapAvgCadence,
+        HUDSlotField.MaxCadence ->
+            CadenceThresholdControls(
+                config = slot.cadenceThreshold,
+                onConfigChange = { onUpdate(slot.copy(cadenceThreshold = it)) },
+            )
+        HUDSlotField.Grade -> HUDGradeCard(slot, onUpdate)
+        HUDSlotField.Vam ->
+            VamWindowControls(slot.vamWindow) { onUpdate(slot.copy(vamWindow = it)) }
+        HUDSlotField.Gears ->
+            GearsFormatControls(
+                format = slot.gearFormat,
+                showChainrings = slot.gearShowChainrings,
+                onFormatChange = { onUpdate(slot.copy(gearFormat = it)) },
+                onChainringsChange = { onUpdate(slot.copy(gearShowChainrings = it)) },
+            )
+        HUDSlotField.Wind ->
+            if (windSpeedApplies) HUDWindCard(slot, onUpdate)
+            else HelperText("Show speed works when the Double is horizontal with a label.")
+        HUDSlotField.FrontTire,
+        HUDSlotField.RearTire -> TireControls(slot, outriderPaired, onUpdate)
+        HUDSlotField.Tires -> DualTireSlotControls(slot, outriderPaired, onUpdate)
+        else -> {}
+    }
+}
+
 /** The slot field's name as the data field picker lists it. */
+@Suppress("CyclomaticComplexMethod")
 internal fun HUDSlotField.displayName(): String =
     when (val f = this) {
         HUDSlotField.Power -> "Power"
+        HUDSlotField.Wkg -> "W/kg"
         HUDSlotField.AvgPower -> "Avg Power"
         HUDSlotField.NP -> "Normalized Power"
         HUDSlotField.LapPower -> "Lap Power"
@@ -699,6 +725,8 @@ internal fun HUDSlotField.displayName(): String =
         HUDSlotField.LastLapAvgCadence -> "Last Lap Avg Cadence"
         HUDSlotField.MaxCadence -> "Max Cadence"
         HUDSlotField.Grade -> "Grade"
+        HUDSlotField.Vam -> "VAM"
+        HUDSlotField.Gears -> "Gears"
         HUDSlotField.Wind -> "Wind"
         HUDSlotField.Distance -> "Distance"
         HUDSlotField.DistanceRemaining -> "Distance remaining"
@@ -709,9 +737,100 @@ internal fun HUDSlotField.displayName(): String =
         HUDSlotField.Elevation -> "Elevation"
         HUDSlotField.FrontTire -> "Front tire pressure"
         HUDSlotField.RearTire -> "Rear tire pressure"
+        HUDSlotField.Tires -> "Front & rear tires"
         is HUDSlotField.Time -> f.kind.label.replace("\n", " ")
         is HUDSlotField.ETA -> f.kind.label.replace("\n", " ")
     }
+
+private val HUD_METRIC_FIELD_GROUPS: List<Pair<String, List<Pair<String, HUDSlotField>>>> =
+    listOf(
+        "Power" to
+            listOf(
+                "Power" to HUDSlotField.Power,
+                "W/kg" to HUDSlotField.Wkg,
+                "Avg Power" to HUDSlotField.AvgPower,
+                "Normalized Power" to HUDSlotField.NP,
+                "Lap Power" to HUDSlotField.LapPower,
+                "Last Lap Power" to HUDSlotField.LastLapPower,
+                "Power Zone" to HUDSlotField.PowerZone,
+                "Max Power" to HUDSlotField.MaxPower,
+            ),
+        "Heart rate" to
+            listOf(
+                "Heart rate" to HUDSlotField.HR,
+                "Avg heart rate" to HUDSlotField.AvgHR,
+                "Lap avg heart rate" to HUDSlotField.LapAvgHR,
+                "Last lap avg heart rate" to HUDSlotField.LastLapAvgHR,
+                "%Max HR" to HUDSlotField.HRMaxPercent,
+                "Max HR" to HUDSlotField.MaxHR,
+                "HR Zone" to HUDSlotField.HRZone,
+            ),
+        "Speed" to
+            listOf(
+                "Speed" to HUDSlotField.Speed,
+                "Avg Speed (Total)" to HUDSlotField.AvgSpeed(includePaused = true),
+                "Avg Speed (Moving)" to HUDSlotField.AvgSpeed(includePaused = false),
+            ),
+        "Cadence" to
+            listOf(
+                "Cadence" to HUDSlotField.Cadence,
+                "Avg Cadence" to HUDSlotField.AvgCadence,
+                "Lap Avg Cadence" to HUDSlotField.LapAvgCadence,
+                "Last Lap Avg Cadence" to HUDSlotField.LastLapAvgCadence,
+                "Max Cadence" to HUDSlotField.MaxCadence,
+            ),
+        "Wind" to listOf("Wind" to HUDSlotField.Wind),
+        "Shifting" to listOf("Gears" to HUDSlotField.Gears),
+    )
+
+private val HUD_TERRAIN_AND_TIME_GROUPS: List<Pair<String, List<Pair<String, HUDSlotField>>>> =
+    listOf(
+        "Climbing" to
+            listOf(
+                "Grade" to HUDSlotField.Grade,
+                "VAM" to HUDSlotField.Vam,
+                "Elevation" to HUDSlotField.Elevation,
+                "Ascent" to HUDSlotField.Ascent,
+                "Descent" to HUDSlotField.Descent,
+            ),
+        "Navigation" to
+            listOf(
+                "Distance" to HUDSlotField.Distance,
+                "Distance remaining" to HUDSlotField.DistanceRemaining,
+                "Ascent remaining" to HUDSlotField.ElevationRemaining,
+                "Descent remaining" to HUDSlotField.DescentRemaining,
+            ),
+        "Tires (Outrider)" to
+            listOf(
+                "Front & rear tires" to HUDSlotField.Tires,
+                "Front tire pressure" to HUDSlotField.FrontTire,
+                "Rear tire pressure" to HUDSlotField.RearTire,
+            ),
+        "Time" to
+            listOf(
+                "Elapsed time" to HUDSlotField.Time(TimeKind.TOTAL),
+                "Moving time" to HUDSlotField.Time(TimeKind.RIDING),
+                "Paused time" to HUDSlotField.Time(TimeKind.PAUSED),
+                "Lap time" to HUDSlotField.Time(TimeKind.LAP),
+                "Last lap time" to HUDSlotField.Time(TimeKind.LAST_LAP),
+            ),
+        "ETA" to
+            listOf(
+                "Remaining ride time" to HUDSlotField.ETA(ETAKind.REMAINING_RIDE_TIME),
+                "To destination" to HUDSlotField.ETA(ETAKind.TIME_TO_DESTINATION),
+                "ETA" to HUDSlotField.ETA(ETAKind.TIME_OF_ARRIVAL),
+            ),
+        "Daylight" to
+            listOf(
+                "Sunrise" to HUDSlotField.Time(TimeKind.TIME_TO_SUNRISE),
+                "Sunset" to HUDSlotField.Time(TimeKind.TIME_TO_SUNSET),
+                "Dawn" to HUDSlotField.Time(TimeKind.TIME_TO_CIVIL_DAWN),
+                "Dusk" to HUDSlotField.Time(TimeKind.TIME_TO_CIVIL_DUSK),
+            ),
+    )
+
+private fun hudSlotFieldGroups(): List<Pair<String, List<Pair<String, HUDSlotField>>>> =
+    HUD_METRIC_FIELD_GROUPS + HUD_TERRAIN_AND_TIME_GROUPS
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -731,85 +850,7 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
                     .fillMaxWidth(),
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            val groups =
-                listOf(
-                    "Power" to
-                        listOf(
-                            "Power" to HUDSlotField.Power,
-                            "Avg Power" to HUDSlotField.AvgPower,
-                            "Normalized Power" to HUDSlotField.NP,
-                            "Lap Power" to HUDSlotField.LapPower,
-                            "Last Lap Power" to HUDSlotField.LastLapPower,
-                            "Power Zone" to HUDSlotField.PowerZone,
-                            "Max Power" to HUDSlotField.MaxPower,
-                        ),
-                    "Heart rate" to
-                        listOf(
-                            "Heart rate" to HUDSlotField.HR,
-                            "Avg heart rate" to HUDSlotField.AvgHR,
-                            "Lap avg heart rate" to HUDSlotField.LapAvgHR,
-                            "Last lap avg heart rate" to HUDSlotField.LastLapAvgHR,
-                            "%Max HR" to HUDSlotField.HRMaxPercent,
-                            "Max HR" to HUDSlotField.MaxHR,
-                            "HR Zone" to HUDSlotField.HRZone,
-                        ),
-                    "Speed" to
-                        listOf(
-                            "Speed" to HUDSlotField.Speed,
-                            "Avg Speed (Total)" to HUDSlotField.AvgSpeed(includePaused = true),
-                            "Avg Speed (Moving)" to HUDSlotField.AvgSpeed(includePaused = false),
-                        ),
-                    "Cadence" to
-                        listOf(
-                            "Cadence" to HUDSlotField.Cadence,
-                            "Avg Cadence" to HUDSlotField.AvgCadence,
-                            "Lap Avg Cadence" to HUDSlotField.LapAvgCadence,
-                            "Last Lap Avg Cadence" to HUDSlotField.LastLapAvgCadence,
-                            "Max Cadence" to HUDSlotField.MaxCadence,
-                        ),
-                    "Wind" to listOf("Wind" to HUDSlotField.Wind),
-                    "Climbing" to
-                        listOf(
-                            "Grade" to HUDSlotField.Grade,
-                            "Elevation" to HUDSlotField.Elevation,
-                            "Ascent" to HUDSlotField.Ascent,
-                            "Descent" to HUDSlotField.Descent,
-                        ),
-                    "Navigation" to
-                        listOf(
-                            "Distance" to HUDSlotField.Distance,
-                            "Distance remaining" to HUDSlotField.DistanceRemaining,
-                            "Ascent remaining" to HUDSlotField.ElevationRemaining,
-                            "Descent remaining" to HUDSlotField.DescentRemaining,
-                        ),
-                    "Tires (Outrider)" to
-                        listOf(
-                            "Front tire pressure" to HUDSlotField.FrontTire,
-                            "Rear tire pressure" to HUDSlotField.RearTire,
-                        ),
-                    "Time" to
-                        listOf(
-                            "Elapsed time" to HUDSlotField.Time(TimeKind.TOTAL),
-                            "Moving time" to HUDSlotField.Time(TimeKind.RIDING),
-                            "Paused time" to HUDSlotField.Time(TimeKind.PAUSED),
-                            "Lap time" to HUDSlotField.Time(TimeKind.LAP),
-                            "Last lap time" to HUDSlotField.Time(TimeKind.LAST_LAP),
-                        ),
-                    "ETA" to
-                        listOf(
-                            "Remaining ride time" to HUDSlotField.ETA(ETAKind.REMAINING_RIDE_TIME),
-                            "To destination" to HUDSlotField.ETA(ETAKind.TIME_TO_DESTINATION),
-                            "ETA" to HUDSlotField.ETA(ETAKind.TIME_OF_ARRIVAL),
-                        ),
-                    "Daylight" to
-                        listOf(
-                            "Sunrise" to HUDSlotField.Time(TimeKind.TIME_TO_SUNRISE),
-                            "Sunset" to HUDSlotField.Time(TimeKind.TIME_TO_SUNSET),
-                            "Dawn" to HUDSlotField.Time(TimeKind.TIME_TO_CIVIL_DAWN),
-                            "Dusk" to HUDSlotField.Time(TimeKind.TIME_TO_CIVIL_DUSK),
-                        ),
-                )
-            groups.forEachIndexed { groupIndex, (groupLabel, fields) ->
+            hudSlotFieldGroups().forEachIndexed { groupIndex, (groupLabel, fields) ->
                 if (groupIndex > 0) HorizontalDivider()
                 Caption(
                     groupLabel,
@@ -829,8 +870,57 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HUDSpeedCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
+private fun ClimbSwapDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
+    val swapLabel = slot.climbSwapField?.displayName() ?: "Keep same"
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+        OutlinedTextField(
+            value = swapLabel,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("On climbs") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            modifier =
+                Modifier.testTag("bf:hud:climb-swap")
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth(),
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text("Keep same") },
+                onClick = {
+                    onUpdate(slot.copy(climbSwapField = null))
+                    expanded = false
+                },
+            )
+            hudSlotFieldGroups().forEach { (groupLabel, fields) ->
+                HorizontalDivider()
+                Caption(
+                    groupLabel,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                )
+                fields.forEach { (label, field) ->
+                    DropdownMenuItem(
+                        text = { Text(label) },
+                        onClick = {
+                            onUpdate(slot.copy(climbSwapField = field.takeIf { it != slot.field }))
+                            expanded = false
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HUDSpeedCard(
+    slot: HUDSlotConfig,
+    profile: UserProfile,
+    onUpdate: (HUDSlotConfig) -> Unit,
+) {
     ControlLabel("SMOOTHING")
     SmoothingSlider(
         options = SpeedSmoothingStream.entries,
@@ -838,6 +928,20 @@ private fun HUDSpeedCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit)
         label = { it.label },
         onSelected = { onUpdate(slot.copy(speedSmoothing = it)) },
         thumbIcon = R.drawable.ic_col_speed,
+    )
+    SpeedThresholdControls(
+        config = slot.toSpeedFieldConfig(),
+        profile = profile,
+        onConfigChange = { cfg ->
+            onUpdate(
+                slot.copy(
+                    speedSource = cfg.source,
+                    speedThresholdKph = cfg.thresholdKph,
+                    speedRangeBelow = cfg.rangePercentBelow,
+                    speedRangeAbove = cfg.rangePercentAbove,
+                )
+            )
+        },
     )
 }
 
@@ -889,6 +993,48 @@ private fun HUDGradeCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit)
 }
 
 @Composable
+private fun SparklineLookaheadControls(
+    config: SparklineConfig,
+    profile: UserProfile,
+    onUpdate: (SparklineConfig) -> Unit,
+) {
+    val scalesM = config.effectiveScalesM()
+    val isCustom = config.lookaheadScalesM.isNotEmpty()
+    val currentM = config.effectiveLookaheadMInt()
+    val selectedM = scalesM.minByOrNull { abs(it - currentM) } ?: scalesM.first()
+    ChoiceRow(
+        label = "LOOKAHEAD",
+        options = scalesM.map { m -> m to formatLookaheadPill(m, profile, isCustom) },
+        selected = selectedM,
+        onSelect = { onUpdate(config.withLookaheadMeters(it)) },
+        help = "Distance shown ahead. Tap the profile during a ride to cycle through these scales.",
+    )
+    val distUnit = ConvertType.DISTANCE.unit(profile)
+    val defaultHint =
+        DEFAULT_LOOKAHEAD_SCALES_M.joinToString(", ") {
+            formatLookaheadNumber(it, profile, isCustom = false)
+        }
+    LabeledHelper("TAP SCALES (${distUnit.uppercase()})") {
+        HelperText("Comma-separated distances to cycle on tap (e.g. 1, 3, 5, 10). Empty resets.")
+    }
+    var scalesText by
+        remember(config.lookaheadScalesM, profile) {
+            mutableStateOf(formatLookaheadScalesInput(config.lookaheadScalesM, profile))
+        }
+    CommitOnFocusLossTextField(
+        text = scalesText,
+        onTextChange = { scalesText = it },
+        onCommit = {
+            val parsed = parseLookaheadScalesInput(scalesText, profile)
+            scalesText = formatLookaheadScalesInput(parsed, profile)
+            onUpdate(config.withCustomScalesM(parsed))
+        },
+        placeholder = "Default ($defaultHint $distUnit) — e.g. 1, 3, 5, 10",
+        keyboardType = KeyboardType.Text,
+    )
+}
+
+@Composable
 internal fun SparklineOptionsControls(
     config: SparklineConfig,
     zoneConfig: ZoneConfig,
@@ -897,17 +1043,7 @@ internal fun SparklineOptionsControls(
 ) {
     // Lookahead is inert in Climbs mode: the window is pinned to the climb, not your position.
     if (config.hudMode != SparklineMode.CLIMBS) {
-        ChoiceRow(
-            label = "LOOKAHEAD",
-            options =
-                listOf(5, 10, 20).map { km ->
-                    val display = ConvertType.DISTANCE.toDisplay(km.toDouble(), profile).toInt()
-                    km to "$display ${ConvertType.DISTANCE.unit(profile)}"
-                },
-            selected = config.lookaheadKm,
-            onSelect = { onUpdate(config.copy(lookaheadKm = it)) },
-            help = "Distance shown ahead of your position.",
-        )
+        SparklineLookaheadControls(config = config, profile = profile, onUpdate = onUpdate)
     }
     // Read through gradeEdges, the same resolution the renderers use, so the bar and handles
     // show exactly which bands the profile colours.

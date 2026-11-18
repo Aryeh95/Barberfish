@@ -177,10 +177,18 @@ class DoubleFieldTest {
 
     @Test
     fun `one slot left sizes as the whole cell`() {
-        val cfg =
-            halfCell().toDoubleSlotSizeConfig(1, DoubleLabel.BOTH, DataFieldDesignConfig(), 1.875f)
-        assertEquals(238f, cfg.cellWidthPxOverride!!, 0.01f)
-        assertEquals(30, cfg.colSpan)
+        val fiveRow =
+            halfCell(46)
+                .toDoubleSlotSizeConfig(1, DoubleLabel.BOTH, DataFieldDesignConfig(), 1.875f)
+        assertEquals(238f, fiveRow.cellWidthPxOverride!!, 0.01f)
+        assertEquals(30, fiveRow.colSpan)
+        // Collapsed 1-slot cell preserves full native textSize on 5-row and 6-row pages.
+        assertEquals(46, fiveRow.valueFontSizeBase)
+        val sixRow =
+            halfCell(38)
+                .copy(gridSize = 30 to 10, viewSize = 238 to 104)
+                .toDoubleSlotSizeConfig(1, DoubleLabel.BOTH, DataFieldDesignConfig(), 1.875f)
+        assertEquals(38, sixRow.valueFontSizeBase)
     }
 
     @Test

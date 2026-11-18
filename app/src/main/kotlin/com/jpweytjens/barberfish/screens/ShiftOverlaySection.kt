@@ -21,6 +21,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -94,6 +95,8 @@ internal fun ColumnScope.ShiftOverlaySectionContent(
     onUpdate: (ShiftOverlayConfig) -> Unit,
 ) {
     val context = LocalContext.current
+    val previewOverlay = remember(context) { ShiftOverlay(context) }
+    DisposableEffect(previewOverlay) { onDispose { previewOverlay.dismiss() } }
     HelperText(
         "Shows the gears over the ride screen for a moment when a shift lands on the smallest or " +
             "largest cog, from any electronic groupset paired with the Karoo, such as SRAM AXS."
@@ -128,7 +131,7 @@ internal fun ColumnScope.ShiftOverlaySectionContent(
         options = ShiftTrigger.entries.map { it to it.label },
         selected = config.trigger,
         onSelect = { onUpdate(config.copy(trigger = it)) },
-        help = "The ends of the cassette only, or every shift, front or rear.",
+        help = "Cassette ends only, ends plus cross-chain, or every shift.",
     )
     ChoiceRow(
         label = "SHOW FOR",
@@ -136,12 +139,18 @@ internal fun ColumnScope.ShiftOverlaySectionContent(
         selected = config.seconds,
         onSelect = { onUpdate(config.copy(seconds = it)) },
     )
+    BoolToggleRow(
+        label = "BATTERY BADGE",
+        value = config.batteryAlert,
+        onChange = { onUpdate(config.copy(batteryAlert = it)) },
+        help = "Show a warning badge on the overlay when a derailleur battery is low or critical.",
+    )
     ShiftOverlayLayoutControls(config, onUpdate)
     ShiftOverlayPlacementControls(config, onUpdate)
 
     if (overlayAllowed) {
         ActionButton("SHOW ON SCREEN") {
-            ShiftOverlay(context).show(PREVIEW_READING, CassetteEnd.SMALLEST, config)
+            previewOverlay.show(PREVIEW_READING, CassetteEnd.SMALLEST, config)
         }
     }
 }
@@ -333,7 +342,7 @@ private fun ShiftOverlayPreview(config: ShiftOverlayConfig) {
 }
 
 @Composable
-private fun ActionButton(label: String, onClick: () -> Unit) {
+internal fun ActionButton(label: String, onClick: () -> Unit) {
     Box(
         modifier =
             Modifier.fillMaxWidth()

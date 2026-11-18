@@ -24,6 +24,7 @@ import com.jpweytjens.barberfish.datatype.shared.WIND_ARROW_GAP_DP
 import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
 import com.jpweytjens.barberfish.datatype.shared.headerHeightPx
 import com.jpweytjens.barberfish.datatype.shared.hideFieldHeader
+import com.jpweytjens.barberfish.datatype.shared.renderDualValuesBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderHeaderBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderSideBySideValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderStackedValueBitmap
@@ -118,7 +119,7 @@ fun barberfishFieldRemoteViews(
     val colors = field.color.toColorConfig(colorMode, isNightMode, field.liveIcon)
     val rv =
         makeFieldRemoteViews(
-            field,
+            field.copy(colorMode = colorMode),
             displayLabel,
             alignment,
             colors,
@@ -330,6 +331,16 @@ private fun makeFieldRemoteViews(
                 // Theme default text, or the on-fill pick in BACKGROUND mode: the arrow never
                 // takes the zone colour.
                 arrowColor = colors.headerText.toArgb(),
+                alignment = alignment,
+                context = context,
+            )
+        } else if (field.dualValues != null) {
+            renderDualValuesBitmap(
+                dual = field.dualValues,
+                colorMode = field.colorMode,
+                colors = colors,
+                bitmapHeightPx = bitmapHeightPx,
+                cellWidthPx = cellWidthPx,
                 alignment = alignment,
                 context = context,
             )

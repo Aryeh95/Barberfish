@@ -15,6 +15,7 @@ import com.jpweytjens.barberfish.datatype.RouteRemainingField
 import com.jpweytjens.barberfish.datatype.SparklineRender
 import com.jpweytjens.barberfish.datatype.shared.DoubleState
 import com.jpweytjens.barberfish.datatype.shared.GradeReading
+import com.jpweytjens.barberfish.datatype.shared.effectiveLookaheadM
 import com.jpweytjens.barberfish.datatype.shared.overviewPreviewBitmap
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
@@ -197,7 +198,7 @@ class AllFieldPreviewsRenderTest {
                         density = context.resources.displayMetrics.density,
                         palette = gradePalette,
                         readable = false,
-                        lookaheadM = sparkCfg.lookaheadKm * 1000f,
+                        lookaheadM = sparkCfg.effectiveLookaheadM,
                         climbEdge = climbEdge,
                         descentEdge = sparkEdges.second,
                         minElevRangeM = sparkCfg.yZoom.minRangeM,

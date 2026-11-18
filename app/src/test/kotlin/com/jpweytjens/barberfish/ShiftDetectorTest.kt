@@ -1,15 +1,20 @@
 package com.jpweytjens.barberfish
 
 import com.jpweytjens.barberfish.extension.CassetteEnd
+import com.jpweytjens.barberfish.extension.DrivetrainBattery
 import com.jpweytjens.barberfish.extension.GearReading
 import com.jpweytjens.barberfish.extension.ShiftDetector
 import com.jpweytjens.barberfish.extension.ShiftGearText
 import com.jpweytjens.barberfish.extension.ShiftOverlayAlign
 import com.jpweytjens.barberfish.extension.ShiftOverlayConfig
 import com.jpweytjens.barberfish.extension.ShiftOverlayPosition
+import com.jpweytjens.barberfish.extension.ShiftTrigger
 import com.jpweytjens.barberfish.extension.overlayOrigin
+import io.hammerhead.karooext.models.BatteryStatus
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ShiftDetectorTest {
@@ -104,16 +109,74 @@ class ShiftDetectorTest {
         assertEquals("F2 - R12", GearReading(front = 2, rear = 12).label(ShiftGearText.TEETH))
         assertNull(GearReading().label(ShiftGearText.TEETH))
     }
+
+    @Test
+    fun `front derailleur connecting or dropping out mid-ride is not a shift`() {
+        val every = ShiftDetector(ShiftTrigger.EVERY_SHIFT)
+        // Rear connects first while front is still asleep (null).
+        assertNull(
+            every.onReading(GearReading(front = null, rear = 6, rearCount = 12, rearTeeth = 17))
+        )
+        // Front wakes up on ring 2 without any rear shift -> must NOT fire a phantom shift.
+        assertNull(every.onReading(axs(6, front = 2)))
+        // Front temporarily drops out -> must NOT fire a phantom shift.
+        assertNull(
+            every.onReading(GearReading(front = null, rear = 6, rearCount = 12, rearTeeth = 17))
+        )
+        // Front reconnects on ring 2 -> still not a shift.
+        assertNull(every.onReading(axs(6, front = 2)))
+        // Actual front shift 2 -> 1 DOES fire in EVERY_SHIFT mode.
+        assertEquals(ShiftDetector.Shift(null), every.onReading(axs(6, front = 1)))
+    }
+
+    @Test
+    fun `cross-chain detection flags big-big and small-small on multi-ring setups`() {
+        assertTrue(axs(rear = 2, front = 2).isCrossChained()) // big ring + 2nd largest cog
+        assertTrue(axs(rear = 11, front = 1).isCrossChained()) // small ring + 2nd smallest cog
+        assertFalse(axs(rear = 6, front = 2).isCrossChained()) // middle of cassette
+        // 1x drivetrain never flags cross-chaining.
+        assertFalse(
+            GearReading(front = 1, frontCount = 1, rear = 2, rearCount = 12, rearTeeth = 28)
+                .isCrossChained()
+        )
+
+        val detector = ShiftDetector(ShiftTrigger.ENDS_AND_CROSS)
+        detector.onReading(axs(rear = 4, front = 2))
+        assertNull(detector.onReading(axs(rear = 3, front = 2)))
+        assertEquals(CassetteEnd.CROSS_CHAIN, detector.onReading(axs(rear = 2, front = 2))?.end)
+        // Shifting further onto cog 1 prioritizes LARGEST_COG over CROSS_CHAIN.
+        assertEquals(CassetteEnd.LARGEST, detector.onReading(axs(rear = 1, front = 2))?.end)
+    }
+
+    @Test
+    fun `low drivetrain battery exposes badge and triggers one-time shift popup`() {
+        val lowRear = DrivetrainBattery(front = BatteryStatus.OK, rear = BatteryStatus.LOW)
+        assertTrue(lowRear.isLowOrCritical)
+        assertFalse(lowRear.isCritical)
+        assertEquals("R BATT LOW", lowRear.badgeText)
+
+        val critFront = DrivetrainBattery(front = BatteryStatus.CRITICAL, rear = BatteryStatus.LOW)
+        assertTrue(critFront.isCritical)
+        assertEquals("F BATT CRIT", critFront.badgeText)
+
+        val detector = ShiftDetector(ShiftTrigger.END_COGS, warnLowBattery = true)
+        detector.onReading(axs(5), lowRear)
+        // First non-end shift while battery is low triggers a one-time popup.
+        assertEquals(ShiftDetector.Shift(null), detector.onReading(axs(6), lowRear))
+        // Subsequent non-end shifts do not repeat the popup.
+        assertNull(detector.onReading(axs(7), lowRear))
+        // Once battery is replaced (OK), the one-time warning resets for future low-battery states.
+        assertNull(detector.onReading(axs(8), DrivetrainBattery(rear = BatteryStatus.NEW)))
+        assertEquals(ShiftDetector.Shift(null), detector.onReading(axs(9), lowRear))
+    }
 }
 
 class ShiftOverlayPlacementTest {
 
     private fun origin(config: ShiftOverlayConfig) =
         overlayOrigin(
-            screenWidth = 480,
-            screenHeight = 800,
-            panelWidth = 200,
-            panelHeight = 100,
+            screen = 480 to 800,
+            panel = 200 to 100,
             margin = 6,
             config = config,
         )

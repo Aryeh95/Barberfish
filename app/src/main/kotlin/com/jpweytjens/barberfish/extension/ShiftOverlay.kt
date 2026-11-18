@@ -14,7 +14,9 @@ import android.provider.Settings
 import android.util.TypedValue
 import android.view.View
 import android.view.WindowManager
+import com.jpweytjens.barberfish.datatype.shared.DrivetrainAlert
 import io.hammerhead.karooext.KarooSystemService
+import io.hammerhead.karooext.models.BatteryStatus
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
 import java.util.Locale
@@ -25,10 +27,49 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import timber.log.Timber
 
-/** The end of the cassette a shift landed on, with the color the shift overlay marks it in. */
+/** Highlight shown on the shift overlay: either cassette end or a cross-chained combination. */
 enum class CassetteEnd(val title: String, val color: Int) {
     SMALLEST("SMALLEST COG", 0xFFD32F2F.toInt()),
     LARGEST("LARGEST COG", 0xFF2386D9.toInt()),
+    CROSS_CHAIN("CROSS CHAIN", 0xFFFFA726.toInt()),
+}
+
+/**
+ * Drivetrain battery levels from [DataType.Type.SHIFTING_BATTERY], whose fields report
+ * [BatteryStatus] ordinals. Surfaces a compact warning badge when any derailleur is low/critical.
+ */
+data class DrivetrainBattery(
+    val front: BatteryStatus? = null,
+    val rear: BatteryStatus? = null,
+    val overall: BatteryStatus? = null,
+) {
+    val isCritical: Boolean
+        get() =
+            rear == BatteryStatus.CRITICAL ||
+                front == BatteryStatus.CRITICAL ||
+                overall == BatteryStatus.CRITICAL
+
+    val isLowOrCritical: Boolean
+        get() =
+            isCritical ||
+                rear == BatteryStatus.LOW ||
+                front == BatteryStatus.LOW ||
+                overall == BatteryStatus.LOW
+
+    val badgeText: String?
+        get() =
+            when {
+                rear == BatteryStatus.CRITICAL -> "R BATT CRIT"
+                front == BatteryStatus.CRITICAL -> "F BATT CRIT"
+                overall == BatteryStatus.CRITICAL -> "BATT CRIT"
+                rear == BatteryStatus.LOW -> "R BATT LOW"
+                front == BatteryStatus.LOW -> "F BATT LOW"
+                overall == BatteryStatus.LOW -> "BATT LOW"
+                else -> null
+            }
+
+    val badgeColor: Int
+        get() = if (isCritical) 0xFFFF5252.toInt() else 0xFFFFA726.toInt()
 }
 
 /**
@@ -60,47 +101,34 @@ data class GearReading(
         return parts.joinToString(" - ").ifEmpty { null }
     }
 
+    /** Compact field/slot string ("50-10", "2-12", or "5.00"), omitting the F/R prefixes. */
+    fun compactLabel(format: GearDisplayFormat, withFront: Boolean = true): String? =
+        when (format) {
+            GearDisplayFormat.TEETH -> {
+                val f = (frontTeeth ?: front)?.takeIf { withFront && (frontCount ?: 2) > 1 }
+                val r = rearTeeth ?: rear
+                listOfNotNull(f, r).joinToString("-").ifEmpty { null }
+            }
+            GearDisplayFormat.NUMBERS -> {
+                val f = front?.takeIf { withFront && (frontCount ?: 2) > 1 }
+                listOfNotNull(f, rear).joinToString("-").ifEmpty { null }
+            }
+            GearDisplayFormat.RATIO ->
+                ratio?.let { String.format(Locale.US, "%.2f", it) }
+                    ?: compactLabel(GearDisplayFormat.TEETH, withFront)
+        }
+
     val ratio: Double?
         get() =
             if (frontTeeth != null && rearTeeth != null && rearTeeth > 0) {
                 frontTeeth.toDouble() / rearTeeth
             } else null
-}
 
-/**
- * Decides when the shift overlay shows: on a shift that lands on the smallest or the largest cog,
- * or on every shift. Never for the first reading after the groupset connects, which is not a shift,
- * and never while the gears stay put.
- *
- * The Karoo numbers rear gears from the largest cog, so gear 1 is the largest and the gear count
- * the smallest. The cog's teeth, when reported, decide instead, so a groupset that numbers the
- * other way still gets the right label. Without a gear count only the largest cog is recognised.
- */
-internal class ShiftDetector(private val everyShift: Boolean) {
-    private var last: GearReading? = null
-
-    /** The overlay to show for [reading]: null for none, else whether it is at an end. */
-    fun onReading(reading: GearReading): Shift? {
-        val connected = reading.rear != null && reading.rear > 0
-        val previous = last
-        last = reading.takeIf { connected }
-        if (!connected || previous == null) return null
-        val rearShift = previous.rear != reading.rear
-        val frontShift = previous.front != reading.front
-        val end = if (rearShift) cassetteEnd(reading) else null
-        return when {
-            end != null -> Shift(end)
-            everyShift && (rearShift || frontShift) -> Shift(null)
-            else -> null
-        }
-    }
-
-    data class Shift(val end: CassetteEnd?)
-
-    private fun cassetteEnd(reading: GearReading): CassetteEnd? {
-        val gear = reading.rear
-        val count = reading.rearCount?.takeIf { it > 1 }
-        val teeth = reading.rearTeeth
+    /** Which end of the cassette this reading sits on, or null between the ends. */
+    fun cassetteEnd(): CassetteEnd? {
+        val gear = rear
+        val count = rearCount?.takeIf { it > 1 }
+        val teeth = rearTeeth
         return when {
             gear == null || (gear != 1 && gear != count) -> null
             teeth != null && teeth >= LARGE_COG_TEETH -> CassetteEnd.LARGEST
@@ -110,25 +138,118 @@ internal class ShiftDetector(private val everyShift: Boolean) {
         }
     }
 
-    private companion object {
-        // No cassette's largest cog is under 20 teeth or its smallest over 14.
-        const val LARGE_COG_TEETH = 20
-        const val SMALL_COG_TEETH = 14
+    /**
+     * True on extreme cross-chain combinations of a multi-ring setup: big ring with the two largest
+     * cogs, or small ring with the two smallest cogs.
+     */
+    fun isCrossChained(): Boolean {
+        val f = front
+        val fMax = frontCount?.takeIf { it >= 2 }
+        val r = rear
+        val rMax = rearCount?.takeIf { it >= MIN_CASSETTE_FOR_CROSS }
+        return if (f != null && fMax != null && r != null) {
+            rMax != null && isExtremeCombination(f, fMax, r, rMax)
+        } else {
+            false
+        }
     }
+
+    private fun isExtremeCombination(f: Int, fMax: Int, r: Int, rMax: Int): Boolean {
+        val reversed = isNumberedFromSmallest(r, rMax)
+        val onLargestTwo = if (reversed) r >= rMax - 1 else r <= 2
+        val onSmallestTwo = if (reversed) r <= 2 else r >= rMax - 1
+        return (f == fMax && onLargestTwo) || (f == 1 && onSmallestTwo)
+    }
+
+    private fun isNumberedFromSmallest(rearGear: Int, rearMax: Int): Boolean {
+        val teeth = rearTeeth ?: return false
+        return (rearGear == 1 && teeth <= SMALL_COG_TEETH) ||
+            (rearGear == rearMax && teeth >= LARGE_COG_TEETH)
+    }
+
+    /** Alert state for field/slot coloring: cassette ends first, then cross-chain. */
+    fun drivetrainAlert(): DrivetrainAlert? =
+        when (cassetteEnd()) {
+            CassetteEnd.SMALLEST -> DrivetrainAlert.SMALLEST_COG
+            CassetteEnd.LARGEST -> DrivetrainAlert.LARGEST_COG
+            else -> if (isCrossChained()) DrivetrainAlert.CROSS_CHAIN else null
+        }
+
+    companion object {
+        // No cassette's largest cog is under 20 teeth or its smallest over 14.
+        private const val LARGE_COG_TEETH = 20
+        private const val SMALL_COG_TEETH = 14
+        private const val MIN_CASSETTE_FOR_CROSS = 6
+    }
+}
+
+/**
+ * Decides when the shift overlay shows: on a shift that lands on the smallest or the largest cog,
+ * on ends plus cross-chaining, or on every shift. Never for the first reading after a derailleur
+ * connects, which is not a shift, and never while the gears stay put.
+ */
+internal class ShiftDetector(
+    private val trigger: ShiftTrigger = ShiftTrigger.END_COGS,
+    private val warnLowBattery: Boolean = false,
+) {
+    constructor(
+        everyShift: Boolean
+    ) : this(if (everyShift) ShiftTrigger.EVERY_SHIFT else ShiftTrigger.END_COGS)
+
+    private var last: GearReading? = null
+    private var batteryWarned = false
+
+    /** The overlay to show for [reading]: null for none, else whether it carries a highlight. */
+    fun onReading(
+        reading: GearReading,
+        battery: DrivetrainBattery = DrivetrainBattery(),
+    ): Shift? {
+        if (!battery.isLowOrCritical) batteryWarned = false
+        val connected = reading.rear != null && reading.rear > 0
+        val previous = last
+        last = reading.takeIf { connected }
+        return if (!connected || previous == null) {
+            null
+        } else {
+            classifyShift(previous, reading, battery)
+        }
+    }
+
+    private fun classifyShift(
+        previous: GearReading,
+        reading: GearReading,
+        battery: DrivetrainBattery,
+    ): Shift? {
+        val rearShift = previous.rear != reading.rear
+        if (!rearShift && !didFrontShift(previous, reading)) return null
+        val end = if (rearShift) reading.cassetteEnd() else null
+        val cross = trigger == ShiftTrigger.ENDS_AND_CROSS && reading.isCrossChained()
+        val firstLowBattShift = consumeLowBatteryWarning(battery)
+        return when {
+            end != null -> Shift(end)
+            cross -> Shift(CassetteEnd.CROSS_CHAIN)
+            trigger == ShiftTrigger.EVERY_SHIFT || firstLowBattShift -> Shift(null)
+            else -> null
+        }
+    }
+
+    // Ignore initial front-derailleur connection (null -> gear) and temporary dropouts.
+    private fun didFrontShift(previous: GearReading, reading: GearReading): Boolean =
+        previous.front != null && reading.front != null && previous.front != reading.front
+
+    private fun consumeLowBatteryWarning(battery: DrivetrainBattery): Boolean {
+        val shouldWarn = warnLowBattery && battery.isLowOrCritical && !batteryWarned
+        if (shouldWarn) batteryWarned = true
+        return shouldWarn
+    }
+
+    data class Shift(val end: CassetteEnd?)
 }
 
 /**
  * The shift overlay's panel, after Ki2's dark overlay and GearsView (github.com/valterc/ki2,
  * Copyright (c) 2022 Valter C., MIT licence): a title bar, the chainrings and cassette as bars with
- * the gear in use filled, and the gears with their ratio. [config] picks which parts show and their
- * size. A gear on either end of the cassette is filled and titled in that end's color; with the
- * header off, the gears are written in it instead.
- *
- * With the gear bars the panel takes the width it is given less a margin each side (times the
- * size's width fraction); without them it is as wide as its text. With [fillsWindow] the view fills
- * its window, a transparent one over the whole screen, and draws the panel where [overlayOrigin]
- * puts it, so the placement follows the screen the panel is really drawn on, whatever size the app
- * is told the display is.
+ * the gear in use filled, and the gears with their ratio.
  */
 @SuppressLint("ViewConstructor") // only ever built in code
 internal class ShiftOverlayView(
@@ -137,6 +258,7 @@ internal class ShiftOverlayView(
     private val end: CassetteEnd?,
     private val config: ShiftOverlayConfig,
     private val fillsWindow: Boolean = false,
+    battery: DrivetrainBattery = DrivetrainBattery(),
 ) : View(context) {
     private val metrics = resources.displayMetrics
     private val scale = config.size.scale
@@ -147,6 +269,7 @@ internal class ShiftOverlayView(
     private val showsFront = config.showChainrings && reading.front != null
     private val ratio =
         reading.ratio?.takeIf { config.showRatio }?.let { String.format(Locale.US, "%.2f", it) }
+    private val batteryBadge = battery.badgeText?.takeIf { config.batteryAlert }
     // The overlay is never empty: with every part off, the gears are still written.
     private val gears =
         reading.label(if (showsBars) config.gearText else config.textGears, showsFront)
@@ -154,14 +277,12 @@ internal class ShiftOverlayView(
                 !config.showHeader && !showsBars && ratio == null
             }
 
-    // The panel's size, worked out on measure; the view's own when it does not fill its window.
     private var panelWidth = 0
     private var panelHeight = 0
 
     private val background = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = BACKGROUND }
     private val titleBar = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = TITLE_BAR }
     private val selected = gearPaint(GEAR_FILL)
-    // The cog in use takes the end's color, so the chainring never reads as the alert.
     private val selectedCog = gearPaint(end?.color ?: GEAR_FILL)
     private val unselected =
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -169,9 +290,8 @@ internal class ShiftOverlayView(
             style = Paint.Style.STROKE
             strokeWidth = stroke
         }
-    // The Karoo's own fonts, as Barberfish's fields use them: Relative for values, IBM Plex Sans
-    // Condensed for headers and labels.
     private val title = text(TITLE_SP, LABEL_BOLD, end?.color ?: Color.WHITE)
+    private val badgePaint = text(BADGE_SP, LABEL_BOLD, battery.badgeColor)
     private val countText = text(COUNT_SP, LABEL_BOLD, Color.WHITE)
     private val gearText =
         text(GEARS_SP, VALUE_FONT, end?.color?.takeIf { !config.showHeader } ?: Color.WHITE)
@@ -188,7 +308,6 @@ internal class ShiftOverlayView(
         if (config.showHeader) height += dp(TITLE_BAR_DP) + pad
         if (showsBars) height += dp(GEARS_DP) + lineHeightOf(countText) + pad
         if (hasTextRow) height += lineHeightOf(gearText) + pad
-        // The gear bars spread across the screen, short of a margin each side, as Ki2's do.
         val available = MeasureSpec.getSize(widthMeasureSpec).toFloat()
         val margin = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, SIDE_MARGIN_DP, metrics)
         val width =
@@ -205,7 +324,7 @@ internal class ShiftOverlayView(
         }
     }
 
-    /** The narrowest panel that fits the title and the text row. */
+    /** The narrowest panel that fits the title (plus any battery badge) and the text row. */
     private fun textWidth(): Float {
         val row =
             listOfNotNull(
@@ -213,24 +332,19 @@ internal class ShiftOverlayView(
                 ratio?.let { ratioText.measureText(it) },
             )
         val rowWidth = row.sum() + if (row.size > 1) pad * 2 else 0f
-        val titleWidth = if (config.showHeader) title.measureText(titleText) else 0f
+        val badgeW = batteryBadge?.let { badgePaint.measureText(it) + pad * 2 } ?: 0f
+        val titleWidth = if (config.showHeader) title.measureText(titleText) + badgeW else 0f
         return maxOf(rowWidth, titleWidth) + pad * 2
     }
 
-    /**
-     * Where the panel sits in the view once measured: at the origin, or with [fillsWindow] where
-     * [overlayOrigin] places it in the window.
-     */
     val panelBounds: Rect
         get() {
             if (!fillsWindow) return Rect(0, 0, panelWidth, panelHeight)
             val margin = dp(SIDE_MARGIN_DP).toInt()
             val (x, y) =
                 overlayOrigin(
-                    measuredWidth,
-                    measuredHeight,
-                    panelWidth,
-                    panelHeight,
+                    measuredWidth to measuredHeight,
+                    panelWidth to panelHeight,
                     margin,
                     config,
                 )
@@ -254,6 +368,10 @@ internal class ShiftOverlayView(
             canvas.drawRoundRect(0f, 0f, w, barHeight, radius, radius, titleBar)
             canvas.drawRect(0f, barHeight - radius, w, barHeight, titleBar)
             canvas.drawText(titleText, pad, baseline(title, 0f, barHeight), title)
+            batteryBadge?.let { badge ->
+                val bx = w - pad - badgePaint.measureText(badge)
+                canvas.drawText(badge, bx, baseline(badgePaint, 0f, barHeight), badgePaint)
+            }
             y = barHeight + pad
         }
 
@@ -266,7 +384,11 @@ internal class ShiftOverlayView(
             val line = lineHeightOf(gearText)
             val base = baseline(gearText, y, y + line)
             gears?.let { canvas.drawText(it, pad, base, gearText) }
-            ratio?.let { canvas.drawText(it, w - pad - ratioText.measureText(it), base, ratioText) }
+            val rightText = ratio ?: batteryBadge?.takeIf { !config.showHeader }
+            val rightPaint = if (ratio != null) ratioText else badgePaint
+            rightText?.let {
+                canvas.drawText(it, w - pad - rightPaint.measureText(it), base, rightPaint)
+            }
         }
     }
 
@@ -277,8 +399,6 @@ internal class ShiftOverlayView(
         val space = width * GEAR_SPACE
         val setSpace = if (frontCount > 0) width * SET_SPACE else 0f
         val total = frontCount + rearCount
-        // Bars wider than [MAX_GEAR_DP], as a lone cassette would get, stay that wide and the set
-        // is centered.
         val gearWidth =
             minOf((width - space * (total + frontCount) - setSpace) / total, dp(MAX_GEAR_DP))
         val setWidth = gearWidth * total + space * (total + frontCount) + setSpace
@@ -291,25 +411,21 @@ internal class ShiftOverlayView(
         if (frontCount > 0) {
             val bump = if (frontCount == 1) 0f else (1 - FRONT_MIN) * usable / (frontCount - 1)
             for (i in 1..frontCount) {
-                bar(
-                    canvas,
-                    x,
-                    barTop + bump * (frontCount - i),
-                    gearWidth,
-                    bottom,
-                    if (i == reading.front) selected else unselected,
-                )
+                val ringPaint =
+                    if (i == reading.front) {
+                        if (end == CassetteEnd.CROSS_CHAIN) selectedCog else selected
+                    } else unselected
+                canvas.bar(x, barTop + bump * (frontCount - i), gearWidth, bottom, ringPaint)
                 x += gearWidth + space
             }
-            drawCount(canvas, start + space, x - space, bottom, reading.front, frontCount)
+            canvas.drawCount(start + space, x - space, bottom, reading.front, frontCount)
         }
 
         val rearLeft = start + (gearWidth + space * 2) * frontCount + setSpace
         x = rearLeft
         val bump = if (rearCount == 1) 0f else usable * REAR_DROP / (rearCount - 1)
         for (i in 1..rearCount) {
-            bar(
-                canvas,
+            canvas.bar(
                 x,
                 barTop + bump * (i - 1),
                 gearWidth,
@@ -318,11 +434,10 @@ internal class ShiftOverlayView(
             )
             x += gearWidth + space
         }
-        drawCount(canvas, rearLeft, x - space, bottom, reading.rear, rearCount)
+        canvas.drawCount(rearLeft, x - space, bottom, reading.rear, rearCount)
     }
 
-    private fun bar(
-        canvas: Canvas,
+    private fun Canvas.bar(
         x: Float,
         top: Float,
         width: Float,
@@ -330,7 +445,7 @@ internal class ShiftOverlayView(
         paint: Paint,
     ) {
         val r = width / 2
-        canvas.drawRoundRect(x, top, x + width, bottom, r, r, paint)
+        drawRoundRect(x, top, x + width, bottom, r, r, paint)
     }
 
     private fun gearPaint(fill: Int) =
@@ -340,8 +455,7 @@ internal class ShiftOverlayView(
             strokeWidth = stroke
         }
 
-    private fun drawCount(
-        canvas: Canvas,
+    private fun Canvas.drawCount(
         from: Float,
         to: Float,
         top: Float,
@@ -351,7 +465,7 @@ internal class ShiftOverlayView(
         val label = "${gear ?: "-"}/$count"
         val x = (from + to) / 2 - countText.measureText(label) / 2
         val line = lineHeightOf(countText)
-        canvas.drawText(label, x, baseline(countText, top + stroke, top + stroke + line), countText)
+        drawText(label, x, baseline(countText, top + stroke, top + stroke + line), countText)
     }
 
     private fun text(sp: Float, face: Typeface, textColor: Int) =
@@ -368,7 +482,6 @@ internal class ShiftOverlayView(
         val VALUE_FONT: Typeface = Typeface.create("relative", Typeface.NORMAL)
         val LABEL_BOLD: Typeface = Typeface.create("ibm-plex-sans-condensed", Typeface.BOLD)
 
-        // Ki2's dark theme.
         const val BACKGROUND = 0xFF102020.toInt()
         const val TITLE_BAR = 0x4F000000
         const val GEAR_FILL = 0xFFA0B4BE.toInt()
@@ -386,6 +499,7 @@ internal class ShiftOverlayView(
         const val TITLE_BAR_DP = 30f
         const val GEARS_DP = 50f
         const val TITLE_SP = 18f
+        const val BADGE_SP = 13f
         const val COUNT_SP = 13f
         const val GEARS_SP = 28f
         const val RATIO_SP = 22f
@@ -394,7 +508,6 @@ internal class ShiftOverlayView(
 
 private fun lineHeightOf(paint: Paint): Float = paint.fontMetrics.let { it.descent - it.ascent }
 
-/** The baseline that centers [paint]'s text between [top] and [bottom]. */
 private fun baseline(paint: Paint, top: Float, bottom: Float): Float {
     val m = paint.fontMetrics
     return (top + bottom) / 2 - (m.ascent + m.descent) / 2
@@ -402,8 +515,7 @@ private fun baseline(paint: Paint, top: Float, bottom: Float): Float {
 
 /**
  * Shows [ShiftOverlayView] over the ride screen for a few seconds, the way Ki2 shows shifting: a
- * window that never takes focus or touches and hides itself. Needs the "display over other apps"
- * permission; without it nothing is drawn.
+ * window that never takes focus or touches and hides itself.
  */
 class ShiftOverlay(context: Context) {
     private val context = context.applicationContext
@@ -414,16 +526,19 @@ class ShiftOverlay(context: Context) {
 
     fun allowed(): Boolean = Settings.canDrawOverlays(context)
 
-    fun show(reading: GearReading, end: CassetteEnd?, config: ShiftOverlayConfig) {
+    fun show(
+        reading: GearReading,
+        end: CassetteEnd?,
+        config: ShiftOverlayConfig,
+        battery: DrivetrainBattery = DrivetrainBattery(),
+    ) {
         handler.post {
             remove()
             if (!allowed()) {
                 Timber.w("Shift overlay: no permission to draw over other apps")
                 return@post
             }
-            // A transparent window over the whole screen that never takes a touch; the panel
-            // lays itself out in it, so it needs no screen size from here.
-            val panel = ShiftOverlayView(context, reading, end, config, fillsWindow = true)
+            val panel = ShiftOverlayView(context, reading, end, config, fillsWindow = true, battery)
             val params =
                 WindowManager.LayoutParams(
                     WindowManager.LayoutParams.MATCH_PARENT,
@@ -443,6 +558,11 @@ class ShiftOverlay(context: Context) {
         }
     }
 
+    /** Removes any currently displayed overlay window immediately. */
+    fun dismiss() {
+        handler.post { remove() }
+    }
+
     private fun remove() {
         handler.removeCallbacks(hide)
         view?.let { runCatching { windowManager.removeView(it) } }
@@ -455,18 +575,17 @@ class ShiftOverlay(context: Context) {
 }
 
 /**
- * The top-left corner, in pixels, of a [panelWidth] by [panelHeight] overlay on a screen of
- * [screenWidth] by [screenHeight]: [ShiftOverlayConfig.height] percent of the way down the free
- * space, and to the side [ShiftOverlayConfig.align] picks, [margin] in from that edge.
+ * Top-left corner in pixels of a [panel] (`width to height`) overlay on a [screen] (`width to
+ * height`) display.
  */
 internal fun overlayOrigin(
-    screenWidth: Int,
-    screenHeight: Int,
-    panelWidth: Int,
-    panelHeight: Int,
+    screen: Pair<Int, Int>,
+    panel: Pair<Int, Int>,
     margin: Int,
     config: ShiftOverlayConfig,
 ): Pair<Int, Int> {
+    val (screenWidth, screenHeight) = screen
+    val (panelWidth, panelHeight) = panel
     val x =
         when (config.align) {
             ShiftOverlayAlign.LEFT -> margin
@@ -476,6 +595,17 @@ internal fun overlayOrigin(
     val y = (screenHeight - panelHeight).coerceAtLeast(0) * config.height.coerceIn(0, 100) / 100
     return x.coerceIn(0, (screenWidth - panelWidth).coerceAtLeast(0)) to y
 }
+
+@Suppress("LongParameterList")
+internal fun overlayOrigin(
+    screenWidth: Int,
+    screenHeight: Int,
+    panelWidth: Int,
+    panelHeight: Int,
+    margin: Int,
+    config: ShiftOverlayConfig,
+): Pair<Int, Int> =
+    overlayOrigin(screenWidth to screenHeight, panelWidth to panelHeight, margin, config)
 
 private fun KarooSystemService.gearValues(typeId: String): Flow<Map<String, Double>?> =
     streamDataFlow(typeId).map { (it as? StreamState.Streaming)?.dataPoint?.values }
@@ -496,14 +626,54 @@ internal fun KarooSystemService.streamGears(): Flow<GearReading> =
         )
     }
 
+private fun Double?.toBatteryStatus(): BatteryStatus? =
+    this?.toInt()
+        ?.let { BatteryStatus.entries.getOrNull(it) }
+        ?.takeIf {
+            it != BatteryStatus.INVALID
+        }
+
+/** Streams electronic drivetrain battery levels, emitting an empty reading before the first fix. */
+internal fun KarooSystemService.streamDrivetrainBattery(): Flow<DrivetrainBattery> =
+    gearValues(DataType.Type.SHIFTING_BATTERY)
+        .map { values ->
+            DrivetrainBattery(
+                front =
+                    values
+                        ?.get(DataType.Field.SHIFTING_BATTERY_STATUS_FRONT_DERAILLEUR)
+                        .toBatteryStatus(),
+                rear =
+                    values
+                        ?.get(DataType.Field.SHIFTING_BATTERY_STATUS_REAR_DERAILLEUR)
+                        .toBatteryStatus(),
+                overall = values?.get(DataType.Field.SHIFTING_BATTERY_STATUS).toBatteryStatus(),
+            )
+        }
+        .onStart { emit(DrivetrainBattery()) }
+
 /** Shows the shift overlay while it is switched on. Runs for the life of the extension service. */
 internal suspend fun runShiftOverlay(context: Context, karooSystem: KarooSystemService) {
     val overlay = ShiftOverlay(context)
-    context.streamShiftOverlayConfig().collectLatest { config ->
-        if (!config.enabled) return@collectLatest
-        val detector = ShiftDetector(everyShift = config.trigger == ShiftTrigger.EVERY_SHIFT)
-        karooSystem.streamGears().collect { reading ->
-            detector.onReading(reading)?.let { overlay.show(reading, it.end, config) }
+    try {
+        context.streamShiftOverlayConfig().collectLatest { config ->
+            if (!config.enabled) {
+                overlay.dismiss()
+                return@collectLatest
+            }
+            val detector =
+                ShiftDetector(trigger = config.trigger, warnLowBattery = config.batteryAlert)
+            combine(karooSystem.streamGears(), karooSystem.streamDrivetrainBattery()) {
+                    gears,
+                    battery ->
+                    gears to battery
+                }
+                .collect { (reading, battery) ->
+                    detector.onReading(reading, battery)?.let {
+                        overlay.show(reading, it.end, config, battery)
+                    }
+                }
         }
+    } finally {
+        overlay.dismiss()
     }
 }

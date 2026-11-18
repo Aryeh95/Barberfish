@@ -12,6 +12,7 @@ concurrency:
 
 jobs:
   check:
+    if: github.repository == 'jpweytjens/Barberfish'
     runs-on: ubuntu-latest
     outputs:
       VERSION: ${{ steps.detect_version.outputs.VERSION }}

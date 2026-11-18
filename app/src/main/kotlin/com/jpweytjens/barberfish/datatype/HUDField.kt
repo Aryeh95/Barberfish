@@ -7,12 +7,12 @@ import android.content.res.Configuration
 import android.graphics.Color
 import android.view.View
 import com.jpweytjens.barberfish.R
-import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.HUDState
 import com.jpweytjens.barberfish.datatype.shared.HUD_UPDATE_INTERVAL_MS
 import com.jpweytjens.barberfish.datatype.shared.SlotState
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
+import com.jpweytjens.barberfish.datatype.shared.formatLookaheadTransition
 import com.jpweytjens.barberfish.datatype.shared.sparklineBitmapFlow
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
@@ -66,7 +66,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
         val scope = CoroutineScope(Dispatchers.IO + Job())
         emitter.setCancellable {
             scope.cancel()
-            SparklineTapReceiver.tapSignal.value = 0L to 10
+            SparklineTapReceiver.tapSignal.value = SparklineTapReceiver.TapEvent()
         }
         scope.launch {
             val hudStateFlow = if (config.preview) previewFlow(context) else liveFlow(context)
@@ -81,18 +81,18 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     heightPx = sparklineHeightPx,
                     isPreview = config.preview,
                 )
-            val transitionFlow: Flow<Int?> =
-                SparklineTapReceiver.tapSignal.flatMapLatest { (ts, km) ->
-                    if (ts == 0L) flowOf(null)
+            val transitionFlow: Flow<SparklineTapReceiver.TapEvent?> =
+                SparklineTapReceiver.tapSignal.flatMapLatest { tap ->
+                    if (tap.timestampMs == 0L) flowOf(null)
                     else
                         flow {
-                            emit(km)
+                            emit(tap)
                             delay(2000L)
                             emit(null)
                         }
                 }
             transitionFlow
-                .flatMapLatest { transitionKm ->
+                .flatMapLatest { transitionTap ->
                     combine(
                         hudStateFlow.sample(HUD_UPDATE_INTERVAL_MS),
                         sparklineFlow,
@@ -104,7 +104,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         val showSparklineArea =
                             frame.hudEnabled &&
                                 (frame.bitmap != null ||
-                                    transitionKm != null ||
+                                    transitionTap != null ||
                                     frame.counterText != null)
                         val rv =
                             buildHudRemoteViews(
@@ -115,20 +115,17 @@ class HUDField(private val karooSystem: KarooSystemService) :
                                 sparklineHeightPx = if (showSparklineArea) sparklineHeightPx else 0,
                             )
                         when {
-                            transitionKm != null && frame.hudEnabled -> {
+                            transitionTap != null && frame.hudEnabled -> {
                                 rv.setViewVisibility(R.id.hud_sparkline_container, View.VISIBLE)
                                 rv.setViewVisibility(R.id.hud_elevation_sparkline, View.GONE)
                                 rv.setViewVisibility(R.id.hud_sparkline_transition, View.VISIBLE)
-                                val displayDist =
-                                    ConvertType.DISTANCE.toDisplay(
-                                            transitionKm.toDouble(),
-                                            hudState.profile,
-                                        )
-                                        .toInt()
-                                val distUnit = ConvertType.DISTANCE.unit(hudState.profile)
                                 rv.setTextViewText(
                                     R.id.hud_transition_text,
-                                    "$displayDist$distUnit",
+                                    formatLookaheadTransition(
+                                        transitionTap.meters,
+                                        hudState.profile,
+                                        transitionTap.isCustom,
+                                    ),
                                 )
                                 val transitionColor = if (isNightMode) Color.WHITE else Color.BLACK
                                 rv.setTextColor(R.id.hud_transition_text, transitionColor)

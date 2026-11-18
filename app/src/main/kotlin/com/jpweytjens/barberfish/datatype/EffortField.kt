@@ -57,12 +57,14 @@ class EffortField(private val karooSystem: KarooSystemService) :
         }
 
     companion object {
-        private fun onRouteValue(state: StreamState, fieldId: String): Double? {
-            val streaming = state as? StreamState.Streaming ?: return null
+        private fun isOffRoute(state: StreamState): Boolean {
+            val streaming = state as? StreamState.Streaming ?: return false
             val onRoute = streaming.dataPoint.values[DataType.Field.ON_ROUTE]
-            if (onRoute != null && onRoute == 0.0) return null
-            return streaming.dataPoint.values[fieldId]
+            return onRoute != null && onRoute == 0.0
         }
+
+        private fun streamValue(state: StreamState, fieldId: String): Double? =
+            (state as? StreamState.Streaming)?.dataPoint?.values?.get(fieldId)
 
         private fun effortFieldState(
             distText: String,
@@ -95,22 +97,29 @@ class EffortField(private val karooSystem: KarooSystemService) :
             config: EffortFieldConfig,
             descentState: StreamState? = null,
         ): FieldState {
-            val distM = onRouteValue(distState, DataType.Field.DISTANCE_TO_DESTINATION)
-            val ascentM = onRouteValue(ascentState, DataType.Field.ASCENT_REMAINING)
-            val descentM = descentState?.let { onRouteValue(it, DataType.Field.DESCENT_REMAINING) }
+            val activeStates =
+                if (config.showDescent) listOf(distState, ascentState, descentState)
+                else listOf(distState, ascentState)
+            val distM = streamValue(distState, DataType.Field.DISTANCE_TO_DESTINATION)
+            val ascentM = streamValue(ascentState, DataType.Field.ASCENT_REMAINING)
+            val descentM = descentState?.let { streamValue(it, DataType.Field.DESCENT_REMAINING) }
             val descentMissing = config.showDescent && descentM == null
-            if (distM == null || ascentM == null || descentMissing) {
-                return FieldState.noRoute(LABEL, ICON)
+            return when {
+                activeStates.any { it !is StreamState.Streaming } -> FieldState.noRoute(LABEL, ICON)
+                activeStates.filterNotNull().any(::isOffRoute) -> FieldState.offRoute(LABEL, ICON)
+                distM == null || ascentM == null || descentMissing ->
+                    FieldState.noRoute(LABEL, ICON)
+                else ->
+                    effortFieldState(
+                        distText = formatFixed(ConvertType.DISTANCE.apply(distM, profile), 1),
+                        ascentText = formatFixed(ConvertType.ELEVATION.apply(ascentM, profile), 0),
+                        descentText =
+                            descentM
+                                ?.takeIf { config.showDescent }
+                                ?.let { formatFixed(ConvertType.ELEVATION.apply(it, profile), 0) },
+                        config = config,
+                    )
             }
-            return effortFieldState(
-                distText = formatFixed(ConvertType.DISTANCE.apply(distM, profile), 1),
-                ascentText = formatFixed(ConvertType.ELEVATION.apply(ascentM, profile), 0),
-                descentText =
-                    descentM
-                        ?.takeIf { config.showDescent }
-                        ?.let { formatFixed(ConvertType.ELEVATION.apply(it, profile), 0) },
-                config = config,
-            )
         }
 
         fun previewStates(profile: UserProfile, config: EffortFieldConfig): List<FieldState> {

@@ -16,6 +16,7 @@ import com.jpweytjens.barberfish.datatype.ETAField
 import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.EffortField
 import com.jpweytjens.barberfish.datatype.ElevationSparklineField
+import com.jpweytjens.barberfish.datatype.GearsField
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HRField
 import com.jpweytjens.barberfish.datatype.HRMaxPercentField
@@ -33,9 +34,12 @@ import com.jpweytjens.barberfish.datatype.RouteRemainingField
 import com.jpweytjens.barberfish.datatype.SpeedField
 import com.jpweytjens.barberfish.datatype.TimeField
 import com.jpweytjens.barberfish.datatype.TimeKind
+import com.jpweytjens.barberfish.datatype.TiresField
 import com.jpweytjens.barberfish.datatype.ValueField
 import com.jpweytjens.barberfish.datatype.ValueKind
+import com.jpweytjens.barberfish.datatype.VamField
 import com.jpweytjens.barberfish.datatype.WindField
+import com.jpweytjens.barberfish.datatype.WkgField
 import com.jpweytjens.barberfish.datatype.shared.EffectiveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.GRADE_MAP_REJOIN_CASING_ID
 import com.jpweytjens.barberfish.datatype.shared.GRADE_MAP_REJOIN_ID
@@ -134,6 +138,7 @@ fun barberfishDataTypes(karooSystem: KarooSystemService): List<BarberfishBase<*>
             LapPowerField(karooSystem, isLastLap = true),
             PowerZoneField(karooSystem),
             MaxPowerField(karooSystem),
+            WkgField(karooSystem),
             // HR
             HRField(karooSystem),
             AvgHRField(karooSystem),
@@ -153,7 +158,10 @@ fun barberfishDataTypes(karooSystem: KarooSystemService): List<BarberfishBase<*>
             CadenceStatField(karooSystem, CadenceStatKind.LAST_LAP_AVG),
             CadenceStatField(karooSystem, CadenceStatKind.MAX),
             WindField(karooSystem),
+            GearsField(karooSystem),
+            TiresField(karooSystem),
             GradeField(karooSystem),
+            VamField(karooSystem),
             ElevationSparklineField(karooSystem),
             // Distance & route-remaining
             ValueField(karooSystem, ValueKind.DISTANCE),
@@ -191,6 +199,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
         karooSystem = KarooSystemService(applicationContext)
         karooSystem.connect { Timber.d("Karoo system connected") }
         serviceScope.launch { runShiftOverlay(applicationContext, karooSystem) }
+        serviceScope.launch { runTireAlertOverlay(applicationContext, karooSystem) }
     }
 
     override fun onDestroy() {

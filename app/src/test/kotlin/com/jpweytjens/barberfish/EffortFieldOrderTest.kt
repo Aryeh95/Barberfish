@@ -164,4 +164,27 @@ class EffortFieldOrderTest {
             )
         assertEquals("No route", s.primary)
     }
+
+    @Test
+    fun `riding off a loaded route reads Off route instead of stale remaining numbers`() {
+        val offRouteDist =
+            StreamState.Streaming(
+                DataPoint(
+                    DataType.Type.DISTANCE_TO_DESTINATION,
+                    mapOf(
+                        DataType.Field.DISTANCE_TO_DESTINATION to 15_000.0,
+                        DataType.Field.ON_ROUTE to 0.0,
+                    ),
+                )
+            )
+        val off =
+            EffortField.toFieldState(
+                offRouteDist,
+                ascent,
+                metricProfile,
+                EffortFieldConfig(),
+            )
+        assertEquals("Off route", off.primary)
+        assertNull(off.secondary)
+    }
 }
